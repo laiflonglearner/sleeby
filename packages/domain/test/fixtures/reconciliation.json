@@ -1,0 +1,108 @@
+[
+  {
+    "name": "mirrored duplicate preserves original before mirror",
+    "records": [
+      {
+        "id": "original",
+        "origin": "watch",
+        "start": "2026-10-03T22:00:00Z",
+        "end": "2026-10-04T06:00:00Z",
+        "modified": "2026-10-04T06:01:00Z",
+        "method": "automatic",
+        "stages": ["LIGHT", "DEEP"]
+      },
+      {
+        "id": "mirror",
+        "origin": "aggregator",
+        "start": "2026-10-03T22:00:00Z",
+        "end": "2026-10-04T06:00:00Z",
+        "modified": "2026-10-04T06:02:00Z",
+        "method": "automatic",
+        "stages": ["LIGHT", "DEEP"]
+      }
+    ],
+    "primary": ["original"],
+    "logicalCount": 2,
+    "unionMinutes": 480
+  },
+  {
+    "name": "fragmented stage records stitch through one minute but retain the gap",
+    "records": [
+      {
+        "id": "fragment-a",
+        "origin": "watch",
+        "start": "2026-10-03T22:00:00Z",
+        "end": "2026-10-04T00:00:00Z",
+        "modified": "2026-10-04T06:01:00Z",
+        "method": "automatic",
+        "stages": ["LIGHT"]
+      },
+      {
+        "id": "fragment-b",
+        "origin": "watch",
+        "start": "2026-10-04T00:01:00Z",
+        "end": "2026-10-04T06:00:00Z",
+        "modified": "2026-10-04T06:01:00Z",
+        "method": "automatic",
+        "stages": ["DEEP"]
+      }
+    ],
+    "primary": ["fragment-a"],
+    "logicalCount": 1,
+    "unionMinutes": 479
+  },
+  {
+    "name": "automatic outranks manual after equal information",
+    "records": [
+      {
+        "id": "manual",
+        "origin": "diary",
+        "start": "2026-10-03T22:00:00Z",
+        "end": "2026-10-04T06:00:00Z",
+        "modified": "2026-10-04T06:00:00Z",
+        "method": "manual",
+        "stages": []
+      },
+      {
+        "id": "automatic",
+        "origin": "watch",
+        "start": "2026-10-03T22:00:00Z",
+        "end": "2026-10-04T06:00:00Z",
+        "modified": "2026-10-04T06:01:00Z",
+        "method": "automatic",
+        "stages": []
+      }
+    ],
+    "primary": ["automatic"],
+    "logicalCount": 2,
+    "unionMinutes": 480
+  },
+  {
+    "name": "mixed imported offsets compare the same UTC intervals",
+    "records": [
+      {
+        "id": "jakarta",
+        "origin": "watch",
+        "start": "2026-10-04T05:00:00+07:00",
+        "end": "2026-10-04T13:00:00+07:00",
+        "offsetSeconds": 25200,
+        "modified": "2026-10-04T06:01:00Z",
+        "method": "automatic",
+        "stages": ["LIGHT", "REM"]
+      },
+      {
+        "id": "new-york",
+        "origin": "mirror",
+        "start": "2026-10-03T18:00:00-04:00",
+        "end": "2026-10-04T02:00:00-04:00",
+        "offsetSeconds": -14400,
+        "modified": "2026-10-04T06:02:00Z",
+        "method": "automatic",
+        "stages": ["LIGHT", "REM"]
+      }
+    ],
+    "primary": ["jakarta"],
+    "logicalCount": 2,
+    "unionMinutes": 480
+  }
+]

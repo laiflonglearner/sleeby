@@ -283,6 +283,8 @@ export const HEALTH_CATALOG = Object.freeze({
       'watts',
       'meters-per-second',
       'kilograms',
+      'beats-per-minute',
+      'revolutions-per-minute',
       'platform-code',
     ],
     'planned-exercise',

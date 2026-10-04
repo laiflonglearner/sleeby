@@ -1,3 +1,6 @@
+-- Immutable tables use only their declared ID as a replacement key. WITHOUT ROWID
+-- removes SQLite's hidden rowid aliases, keeping the ID guards effective even
+-- when recursive_triggers is disabled. This bootstrap predates app databases.
 CREATE TABLE `derived_cache` (
 	`key` text PRIMARY KEY NOT NULL,
 	`algorithm_version` integer NOT NULL,
@@ -16,7 +19,7 @@ CREATE TABLE `habit_entries` (
 	FOREIGN KEY (`supersedes_id`) REFERENCES `habit_entries`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "habit_entries_boundary_check" CHECK("habit_entries"."boundary_minutes" BETWEEN 0 AND 1439),
 	CONSTRAINT "habit_entries_json_check" CHECK(json_valid("habit_entries"."data_json"))
-);
+) WITHOUT ROWID;
 --> statement-breakpoint
 CREATE INDEX `habit_entries_day_idx` ON `habit_entries` (`day_key`,`timestamp_utc`);--> statement-breakpoint
 CREATE TABLE `import_cursors` (
@@ -34,7 +37,7 @@ CREATE TABLE `nights` (
 	FOREIGN KEY (`supersedes_id`) REFERENCES `nights`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "nights_boundary_check" CHECK("nights"."boundary_minutes" BETWEEN 0 AND 1439),
 	CONSTRAINT "nights_json_check" CHECK(json_valid("nights"."data_json"))
-);
+) WITHOUT ROWID;
 --> statement-breakpoint
 CREATE INDEX `nights_key_idx` ON `nights` (`night_key`);--> statement-breakpoint
 CREATE TABLE `raw_records` (
@@ -51,7 +54,7 @@ CREATE TABLE `raw_records` (
 	`data_json` text NOT NULL,
 	CONSTRAINT "raw_records_boundary_check" CHECK(("raw_records"."day_key" IS NULL AND "raw_records"."boundary_minutes" IS NULL) OR ("raw_records"."day_key" IS NOT NULL AND "raw_records"."boundary_minutes" IS NOT NULL AND "raw_records"."boundary_minutes" BETWEEN 0 AND 1439)),
 	CONSTRAINT "raw_records_json_check" CHECK(json_valid("raw_records"."data_json"))
-);
+) WITHOUT ROWID;
 --> statement-breakpoint
 CREATE INDEX `raw_records_time_idx` ON `raw_records` (`start_utc`,`id`);--> statement-breakpoint
 CREATE INDEX `raw_records_origin_type_idx` ON `raw_records` (`origin`,`type`,`start_utc`);--> statement-breakpoint
@@ -76,7 +79,7 @@ CREATE TABLE `source_tombstones` (
 	`origin` text NOT NULL,
 	`external_id` text NOT NULL,
 	`observed_at_utc` text NOT NULL
-);
+) WITHOUT ROWID;
 --> statement-breakpoint
 CREATE INDEX `source_tombstones_external_idx` ON `source_tombstones` (`source`,`origin`,`external_id`);--> statement-breakpoint
 CREATE TABLE `subjective_reports` (
@@ -89,6 +92,6 @@ CREATE TABLE `subjective_reports` (
 	FOREIGN KEY (`supersedes_id`) REFERENCES `subjective_reports`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "subjective_reports_boundary_check" CHECK("subjective_reports"."boundary_minutes" BETWEEN 0 AND 1439),
 	CONSTRAINT "subjective_reports_json_check" CHECK(json_valid("subjective_reports"."data_json"))
-);
+) WITHOUT ROWID;
 --> statement-breakpoint
 CREATE INDEX `subjective_reports_night_idx` ON `subjective_reports` (`night_key`,`timestamp_utc`);

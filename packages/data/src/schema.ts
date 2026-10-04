@@ -14,6 +14,9 @@ import {
   type AnySQLiteColumn,
 } from 'drizzle-orm/sqlite-core';
 
+// Migrations own WITHOUT ROWID and immutable triggers, which Drizzle does not model.
+// Preserve both when generating future rebuilds of the five immutable tables.
+
 /** Immutable raw envelope. Dense native samples remain lossless inside its JSON payload. */
 export const rawRecords = sqliteTable(
   'raw_records',

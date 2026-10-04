@@ -715,7 +715,7 @@
           "type": "object",
           "properties": {
             "kind": {
-              "enum": ["unknown", "unspecified"]
+              "enum": ["unknown", "manual-completion"]
             }
           },
           "required": ["kind"],

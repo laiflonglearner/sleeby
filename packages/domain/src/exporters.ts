@@ -422,8 +422,8 @@ function goal(value: ExerciseCompletionGoal): ExportObject {
     'total-calories',
     'active-calories',
     'unknown',
-    'unspecified',
-  ]);
+    'manual-completion',
+  ] satisfies readonly ExerciseCompletionGoal['kind'][]);
   const fields =
     kind === 'distance'
       ? ['meters']
@@ -793,9 +793,15 @@ function* chunks(tokens: Iterable<string>, maximum: number): Generator<string> {
     let offset = 0;
     while (offset < token.length) {
       const remaining = maximum - pending.length;
-      pending += token.slice(offset, offset + remaining);
-      offset += remaining;
-      if (pending.length === maximum) {
+      let end = Math.min(offset + remaining, token.length);
+      // Each chunk must survive UTF-8 encoding without splitting a surrogate pair.
+      const last = token.charCodeAt(end - 1);
+      const next = token.charCodeAt(end);
+      if (last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff)
+        end -= 1;
+      pending += token.slice(offset, end);
+      offset = end;
+      if (pending.length === maximum || end < token.length) {
         yield pending;
         pending = '';
       }

@@ -70,6 +70,84 @@ function record(id: string): RawRecord<'heartRate'> {
 }
 
 describe('committed Drizzle migrations', () => {
+  const immutableTables = [
+    'raw_records',
+    'habit_entries',
+    'nights',
+    'subjective_reports',
+    'source_tombstones',
+  ] as const;
+
+  it.each(immutableTables)(
+    'rejects replacement through every hidden rowid alias on %s with recursive triggers disabled',
+    (table) => {
+      const db = database();
+      try {
+        const repository = new SleebyRepository(db);
+        const timestamp = {
+          utc: '2025-03-09T06:00:00.000Z',
+          reference: { kind: 'offset', offsetSeconds: -18_000 },
+        } as const;
+        const keyAssignment = { key: '2025-03-08', boundaryMinutes: 240 };
+        repository.appendRawRecords([record('original')]);
+        repository.appendHabit({
+          id: 'original',
+          timestamp,
+          keyAssignment,
+          monitoring: 'tracked',
+        });
+        repository.appendNight({
+          id: 'original',
+          keyAssignment,
+          primarySessionId: 'original',
+          sessionIds: ['original'],
+        });
+        repository.appendSubjectiveReport({
+          id: 'original',
+          timestamp,
+          nightAssignment: keyAssignment,
+          morningEnergy: 3,
+        });
+        repository.appendTombstone({
+          id: 'original',
+          source: 'health-connect',
+          origin: 'original.app',
+          externalId: 'deleted',
+          observedAtUtc: '2025-03-09T10:00:00.000Z',
+        });
+        db.exec('PRAGMA recursive_triggers = OFF');
+        expect(
+          db
+            .prepare('PRAGMA table_list')
+            .all()
+            .find((entry) => entry['name'] === table)?.['wr'],
+        ).toBe(1);
+        const columns = db
+          .prepare(`PRAGMA table_info("${table}")`)
+          .all()
+          .map((column) => `"${String(column['name'])}"`);
+        const original = db.prepare(`SELECT * FROM ${table}`).all();
+        for (const alias of ['rowid', '_rowid_', 'oid']) {
+          expect(() =>
+            db.exec(
+              `INSERT OR REPLACE INTO ${table} (${alias}, ${columns.join(', ')})
+               SELECT 1, 'replacement', ${columns.slice(1).join(', ')} FROM ${table}`,
+            ),
+          ).toThrow(`has no column named ${alias}`);
+          expect(db.prepare(`SELECT * FROM ${table}`).all()).toEqual(original);
+        }
+        expect(() =>
+          db.exec(`INSERT OR REPLACE INTO ${table} SELECT * FROM ${table}`),
+        ).toThrow('immutable');
+        expect(() => db.exec(`UPDATE ${table} SET id=id`)).toThrow('immutable');
+        expect(() => db.exec(`DELETE FROM ${table}`)).toThrow('immutable');
+        expect(db.prepare(`SELECT * FROM ${table}`).all()).toEqual(original);
+      } finally {
+        db.close();
+      }
+    },
+  );
+
   it('matches every declared table, column, foreign key and index in real SQLite', () => {
     const db = database();
     try {

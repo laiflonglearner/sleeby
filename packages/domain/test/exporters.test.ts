@@ -15,6 +15,7 @@ import {
   type RecordSelection,
 } from '../src/exporters.js';
 import type {
+  ExerciseCompletionGoal,
   HealthPayloadMap,
   HealthRecordType,
   RawRecord,
@@ -348,6 +349,72 @@ describe('complete-store provenance exports', () => {
 });
 
 describe('versioned export schemas and complete catalog coverage', () => {
+  const completionGoals = {
+    distance: { kind: 'distance', meters: 800 },
+    'distance-duration': {
+      kind: 'distance-duration',
+      meters: 800,
+      milliseconds: 200_000,
+    },
+    duration: { kind: 'duration', milliseconds: 200_000 },
+    steps: { kind: 'steps', count: 400 },
+    repetitions: { kind: 'repetitions', count: 12 },
+    'total-calories': { kind: 'total-calories', kilocalories: 200 },
+    'active-calories': { kind: 'active-calories', kilocalories: 150 },
+    unknown: { kind: 'unknown' },
+    'manual-completion': { kind: 'manual-completion' },
+  } satisfies {
+    [Kind in ExerciseCompletionGoal['kind']]: ExerciseCompletionGoal & {
+      kind: Kind;
+    };
+  };
+
+  for (const mode of ['raw', 'anonymized'] as const) {
+    it.each(Object.values(completionGoals))(
+      `round-trips the $kind completion goal through schema-validated ${mode} JSON and CSV`,
+      async (completionGoal) => {
+        const value = record('plannedExerciseSession', {
+          hasExplicitTime: true,
+          exerciseType: 42,
+          blocks: [
+            {
+              repetitions: 2,
+              steps: [
+                {
+                  exerciseType: 17,
+                  exercisePhase: 3,
+                  completionGoal,
+                  performanceTargets: [],
+                },
+              ],
+            },
+          ],
+        });
+        const entries: readonly ExportEntry[] = [{ kind: 'record', value }];
+        const output = await envelope(entries, mode);
+        expectSchema(output);
+        expect(output.entries[0]!.value['payload']).toEqual(value.payload);
+
+        const options = mode === 'raw' ? { mode } : anonymous;
+        const rows = parsedRows(await collect(exportCsv(entries, options)));
+        const csvRecord = rows.find((row) => row.kind === 'record')!;
+        const { rawPayloadEncoding, ...restored } = csvRecord.value;
+        if (mode === 'raw') {
+          expect(rawPayloadEncoding).toBe('json-fragments');
+          restored['rawPayload'] = JSON.parse(
+            rows
+              .filter((row) => row.kind === 'raw-payload')
+              .map((row) => row.value['fragment'])
+              .join(''),
+          ) as unknown;
+        }
+        const reconstructed = { kind: 'record', value: restored };
+        expect(reconstructed).toEqual(output.entries[0]);
+        expectSchema({ ...output, entries: [reconstructed] });
+      },
+    );
+  }
+
   it('preserves every cataloged raw record verbatim, including native fields and free text', async () => {
     const entries = records.map((value): ExportEntry => ({
       kind: 'record',
@@ -824,20 +891,34 @@ describe('streaming, immutability and hostile text', () => {
     }
   });
 
-  it('limits JSON chunks, including the envelope, and handles Unicode split boundaries', async () => {
-    const value = record('steps', payloads.steps);
-    const chunks: string[] = [];
-    for await (const chunk of exportJson([{ kind: 'record', value }], {
-      mode: 'raw',
-      chunkCharacters: 64,
-    })) {
-      expect(chunk.length).toBeLessThanOrEqual(64);
-      chunks.push(chunk);
-    }
-    expect((JSON.parse(chunks.join('')) as Envelope).entries[0]!.value).toEqual(
-      value,
-    );
-  });
+  it.each([64, 65, 128])(
+    'preserves Unicode through independently UTF-8 encoded JSON chunks bounded by %i characters',
+    async (chunkCharacters) => {
+      for (let padding = 0; padding < chunkCharacters; padding += 1) {
+        const text = `${'a'.repeat(padding)}\u{1f600}\u{1f680}\u{10437}`;
+        const value = {
+          ...record('sleepSession', { stages: [], notes: text }),
+          id: text,
+          rawPayload: { [text]: text, loneSurrogate: '\ud800' },
+        };
+        const encoded: Uint8Array[] = [];
+        const encoder = new TextEncoder();
+        for await (const chunk of exportJson([{ kind: 'record', value }], {
+          mode: 'raw',
+          chunkCharacters,
+        })) {
+          expect(chunk.length).toBeGreaterThan(0);
+          expect(chunk.length).toBeLessThanOrEqual(chunkCharacters);
+          encoded.push(encoder.encode(chunk));
+        }
+        const restored = JSON.parse(
+          Buffer.concat(encoded).toString('utf8'),
+        ) as Envelope;
+        expectSchema(restored);
+        expect(restored.entries[0]!.value).toEqual(value);
+      }
+    },
+  );
 
   it('does not advance the caller cursor until requested by the consumer', async () => {
     let reads = 0;

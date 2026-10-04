@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+.tmp/
+.env
+.env.*
+!.env.example
+.agents/
+.claude/
+.codex/
+docs/

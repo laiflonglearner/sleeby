@@ -37,5 +37,8 @@ describe('stable Health Connect catalog', () => {
       'planned-exercise',
     );
     expect(HEALTH_RECORD_TYPES).not.toContain('activityIntensity');
+    expect(HEALTH_CATALOG.plannedExerciseSession.units).toEqual(
+      expect.arrayContaining(['beats-per-minute', 'revolutions-per-minute']),
+    );
   });
 });

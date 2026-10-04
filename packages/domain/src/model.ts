@@ -358,6 +358,15 @@ export interface HealthReadPage {
 }
 
 /** Native delta deletion is a retained tombstone, never permission to delete raw history. */
+export interface SourceTombstone {
+  readonly id: string;
+  readonly source: HealthPlatform;
+  readonly origin: string;
+  readonly externalId: string;
+  readonly observedAtUtc: string;
+}
+
+/** Native changes distinguish replacement observations from deletion observations. */
 export type HealthChange =
   | Readonly<{ kind: 'upsert'; record: RawRecord }>
   | Readonly<{

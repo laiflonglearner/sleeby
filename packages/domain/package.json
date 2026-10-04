@@ -11,6 +11,7 @@
   "sideEffects": false,
   "files": [
     "dist",
+    "src",
     "schema",
     "README.md",
     "LICENSE"

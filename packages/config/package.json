@@ -1,0 +1,11 @@
+{
+  "name": "@sleeby/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./typescript": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.mjs",
+    "./prettier": "./prettier.config.mjs"
+  }
+}

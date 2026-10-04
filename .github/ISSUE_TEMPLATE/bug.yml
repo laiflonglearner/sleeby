@@ -1,0 +1,16 @@
+name: Bug report
+description: Report an observable problem using synthetic data.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed and expected behavior
+      description: Include reproduction steps, package versions, and runtime. Do not include personal health data.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal synthetic reproduction
+    validations:
+      required: true

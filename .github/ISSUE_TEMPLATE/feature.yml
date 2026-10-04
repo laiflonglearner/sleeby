@@ -1,0 +1,10 @@
+name: Feature proposal
+description: Propose a scoped behavior or contract change.
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Problem and proposed behavior
+      description: State the consumer, scope, alternatives, and evidence needed for review.
+    validations:
+      required: true

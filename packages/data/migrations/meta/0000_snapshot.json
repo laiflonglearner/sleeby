@@ -1,0 +1,566 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "5e39464f-da75-40f7-9ef0-3b1ec2728ae3",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "derived_cache": {
+      "name": "derived_cache",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "algorithm_version": {
+          "name": "algorithm_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "input_fingerprint": {
+          "name": "input_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data_json": {
+          "name": "data_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "derived_cache_json_check": {
+          "name": "derived_cache_json_check",
+          "value": "json_valid(\"derived_cache\".\"data_json\")"
+        }
+      }
+    },
+    "habit_entries": {
+      "name": "habit_entries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp_utc": {
+          "name": "timestamp_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day_key": {
+          "name": "day_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "boundary_minutes": {
+          "name": "boundary_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "supersedes_id": {
+          "name": "supersedes_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "data_json": {
+          "name": "data_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "habit_entries_day_idx": {
+          "name": "habit_entries_day_idx",
+          "columns": ["day_key", "timestamp_utc"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "habit_entries_supersedes_id_habit_entries_id_fk": {
+          "name": "habit_entries_supersedes_id_habit_entries_id_fk",
+          "tableFrom": "habit_entries",
+          "tableTo": "habit_entries",
+          "columnsFrom": ["supersedes_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "habit_entries_boundary_check": {
+          "name": "habit_entries_boundary_check",
+          "value": "\"habit_entries\".\"boundary_minutes\" BETWEEN 0 AND 1439"
+        },
+        "habit_entries_json_check": {
+          "name": "habit_entries_json_check",
+          "value": "json_valid(\"habit_entries\".\"data_json\")"
+        }
+      }
+    },
+    "import_cursors": {
+      "name": "import_cursors",
+      "columns": {
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cursor": {
+          "name": "cursor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at_utc": {
+          "name": "updated_at_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "nights": {
+      "name": "nights",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "night_key": {
+          "name": "night_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "boundary_minutes": {
+          "name": "boundary_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "supersedes_id": {
+          "name": "supersedes_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "data_json": {
+          "name": "data_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "nights_key_idx": {
+          "name": "nights_key_idx",
+          "columns": ["night_key"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "nights_supersedes_id_nights_id_fk": {
+          "name": "nights_supersedes_id_nights_id_fk",
+          "tableFrom": "nights",
+          "tableTo": "nights",
+          "columnsFrom": ["supersedes_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "nights_boundary_check": {
+          "name": "nights_boundary_check",
+          "value": "\"nights\".\"boundary_minutes\" BETWEEN 0 AND 1439"
+        },
+        "nights_json_check": {
+          "name": "nights_json_check",
+          "value": "json_valid(\"nights\".\"data_json\")"
+        }
+      }
+    },
+    "raw_records": {
+      "name": "raw_records",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_modified_utc": {
+          "name": "last_modified_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_utc": {
+          "name": "start_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_utc": {
+          "name": "end_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day_key": {
+          "name": "day_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "boundary_minutes": {
+          "name": "boundary_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "data_json": {
+          "name": "data_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "raw_records_time_idx": {
+          "name": "raw_records_time_idx",
+          "columns": ["start_utc", "id"],
+          "isUnique": false
+        },
+        "raw_records_origin_type_idx": {
+          "name": "raw_records_origin_type_idx",
+          "columns": ["origin", "type", "start_utc"],
+          "isUnique": false
+        },
+        "raw_records_external_idx": {
+          "name": "raw_records_external_idx",
+          "columns": ["source", "origin", "external_id", "last_modified_utc"],
+          "isUnique": false
+        },
+        "raw_records_day_idx": {
+          "name": "raw_records_day_idx",
+          "columns": ["day_key", "type"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "raw_records_boundary_check": {
+          "name": "raw_records_boundary_check",
+          "value": "(\"raw_records\".\"day_key\" IS NULL AND \"raw_records\".\"boundary_minutes\" IS NULL) OR (\"raw_records\".\"day_key\" IS NOT NULL AND \"raw_records\".\"boundary_minutes\" IS NOT NULL AND \"raw_records\".\"boundary_minutes\" BETWEEN 0 AND 1439)"
+        },
+        "raw_records_json_check": {
+          "name": "raw_records_json_check",
+          "value": "json_valid(\"raw_records\".\"data_json\")"
+        }
+      }
+    },
+    "record_selections": {
+      "name": "record_selections",
+      "columns": {
+        "record_id": {
+          "name": "record_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "logical_session_id": {
+          "name": "logical_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "superseded_by": {
+          "name": "superseded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "selected_at_utc": {
+          "name": "selected_at_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "record_selections_session_idx": {
+          "name": "record_selections_session_idx",
+          "columns": ["logical_session_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "record_selections_record_id_raw_records_id_fk": {
+          "name": "record_selections_record_id_raw_records_id_fk",
+          "tableFrom": "record_selections",
+          "tableTo": "raw_records",
+          "columnsFrom": ["record_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "record_selections_superseded_by_raw_records_id_fk": {
+          "name": "record_selections_superseded_by_raw_records_id_fk",
+          "tableFrom": "record_selections",
+          "tableTo": "raw_records",
+          "columnsFrom": ["superseded_by"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "record_selections_status_check": {
+          "name": "record_selections_status_check",
+          "value": "(\"record_selections\".\"status\" = 'primary' AND \"record_selections\".\"superseded_by\" IS NULL) OR (\"record_selections\".\"status\" = 'suppressed' AND \"record_selections\".\"superseded_by\" IS NOT NULL)"
+        }
+      }
+    },
+    "source_tombstones": {
+      "name": "source_tombstones",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "observed_at_utc": {
+          "name": "observed_at_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "source_tombstones_external_idx": {
+          "name": "source_tombstones_external_idx",
+          "columns": ["source", "origin", "external_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "subjective_reports": {
+      "name": "subjective_reports",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp_utc": {
+          "name": "timestamp_utc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "night_key": {
+          "name": "night_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "boundary_minutes": {
+          "name": "boundary_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "supersedes_id": {
+          "name": "supersedes_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "data_json": {
+          "name": "data_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "subjective_reports_night_idx": {
+          "name": "subjective_reports_night_idx",
+          "columns": ["night_key", "timestamp_utc"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "subjective_reports_supersedes_id_subjective_reports_id_fk": {
+          "name": "subjective_reports_supersedes_id_subjective_reports_id_fk",
+          "tableFrom": "subjective_reports",
+          "tableTo": "subjective_reports",
+          "columnsFrom": ["supersedes_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "subjective_reports_boundary_check": {
+          "name": "subjective_reports_boundary_check",
+          "value": "\"subjective_reports\".\"boundary_minutes\" BETWEEN 0 AND 1439"
+        },
+        "subjective_reports_json_check": {
+          "name": "subjective_reports_json_check",
+          "value": "json_valid(\"subjective_reports\".\"data_json\")"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.turbo
+.tmp
+.agents
+.claude
+.codex
+pnpm-lock.yaml
+docs/sleeby-spec.md

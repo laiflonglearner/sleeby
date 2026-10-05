@@ -77,7 +77,7 @@ Do not stage, commit, push, create a pull request, or deploy without specific au
 
 When authorized, include only reviewed task-owned paths. Never use blanket staging, bypass hooks, delete .git/index.lock, or reset another session's work.
 
-Sleeby uses an open source branch workflow. Fixes, features, code changes, and public API changes happen on topic branches and reach main only through a reviewed pull request. Small documentation and instruction edits (README, AGENTS.md, CONTRIBUTING, typos, wording) may be committed directly on main without a branch. Never push to main unless the user explicitly authorizes it, and never push automatically after a commit. Do not import Lifelong Habit's main-only workflow or auto-push assumptions into Sleeby.
+Sleeby uses an open source workflow. Commit locally on main as work proceeds, with no branch needed for local commits. Never push main to the remote, and never push automatically after a commit. When the user asks to publish, move the commits to a topic branch, clean up the history, push that branch, and open a pull request. Work reaches the remote main only by merging a reviewed pull request. Do not import Lifelong Habit's main-only workflow or auto-push assumptions into Sleeby.
 
 Delegate only when the user or applicable instructions request it. Assign explicit file ownership and preserve other workers' changes.
 

@@ -54,7 +54,7 @@ export type SleepSelection =
     }>;
 
 /** Optional independent metric evidence and explicit reversible primary overrides. */
-export interface ReconciliationOptions {
+export interface SleepSelectionOptions {
   readonly otherMetrics?: readonly OtherMetricCoverage[];
   readonly preferredSessionIds?: readonly string[];
 }
@@ -182,9 +182,9 @@ function metricInWindow(
 }
 
 /** Detect cross-origin duplicate components, then apply the documented richness order. */
-export function reconcileSleepRecords(
+export function selectSleepRecords(
   records: readonly SleepRecord[],
-  options: ReconciliationOptions = {},
+  options: SleepSelectionOptions = {},
 ): readonly SleepSelection[] {
   const sessions = reconstructSleepSessions(records);
   const parents = sessions.map((_, index) => index);
@@ -296,7 +296,7 @@ export interface DenseSampleSelection<T> {
 }
 
 /** Prefer the greatest unique-timestamp density within a half-open metric window. */
-export function reconcileDenseSamples<T>(
+export function selectDenseSamples<T>(
   samples: readonly OriginSample<T>[],
   window: Interval,
 ): DenseSampleSelection<T> {
@@ -356,7 +356,7 @@ export interface AdditiveSelection<T> {
 }
 
 /** Choose one additive origin per explicit local-day UTC window, by union coverage. */
-export function reconcileAdditiveRecords<T>(
+export function selectAdditiveRecords<T>(
   records: readonly OriginInterval<T>[],
   dayWindow: Interval,
 ): AdditiveSelection<T> {

@@ -10,4 +10,4 @@ Raw exports include original records, metadata, and suppressed records. Exports 
 
 Future browser use stores data in that browser on that device, with no account required. Clearing site data clears that browser store. Sleeby does not claim encryption at rest for browser data.
 
-The canonical policy is maintained at [this repository's privacy policy URL](https://github.com/laiflonglearner/sleeby/blob/main/PRIVACY.md). A future Health Connect app must show the same policy text and URL before requesting access. Changes affecting data handling require review before release. Privacy questions can be raised through the repository maintainer's profile contact; do not include health data in public issues.
+The official policy is maintained at [this repository's privacy policy URL](https://github.com/laiflonglearner/sleeby/blob/main/PRIVACY.md). A future Health Connect app must show the same policy text and URL before requesting access. Changes affecting data handling require review before release. Privacy questions can be raised through the repository maintainer's profile contact; do not include health data in public issues.

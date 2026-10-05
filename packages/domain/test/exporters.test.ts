@@ -21,7 +21,7 @@ import type {
   RawRecord,
   SleepSession,
 } from '../src/model.js';
-import type { SleepSelection } from '../src/reconciliation.js';
+import type { SleepSelection } from '../src/selection.js';
 
 const PRIVATE = 'PRIVATE_identifier_551_東京';
 const timestamp = {

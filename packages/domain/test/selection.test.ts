@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import fixtures from './fixtures/reconciliation.json' with { type: 'json' };
+import fixtures from './fixtures/selection.json' with { type: 'json' };
 import type {
   RecordingMethod,
   SleepRecord,
@@ -21,10 +21,10 @@ import {
 } from '../src/metrics.js';
 import {
   reconstructSleepSessions,
-  reconcileSleepRecords,
-  reconcileDenseSamples,
-  reconcileAdditiveRecords,
-} from '../src/reconciliation.js';
+  selectSleepRecords,
+  selectDenseSamples,
+  selectAdditiveRecords,
+} from '../src/selection.js';
 import { unionDurationMilliseconds } from '../src/intervals.js';
 
 interface FixtureRecord {
@@ -96,11 +96,11 @@ function simple(
   });
 }
 
-describe('immutable source reconciliation', () => {
+describe('immutable source source selection', () => {
   it.each(fixtures)('$name', (fixture) => {
     const raw = Object.freeze(fixture.records.map(record));
     const before = JSON.stringify(raw);
-    const selection = reconcileSleepRecords(raw);
+    const selection = selectSleepRecords(raw);
     expect(selection).toHaveLength(fixture.logicalCount);
     expect(
       selection
@@ -121,35 +121,34 @@ describe('immutable source reconciliation', () => {
 
   it('allows reversible primary overrides without altering any raw record', () => {
     const records = fixtures[0]!.records.map(record);
-    const primary = reconcileSleepRecords(records, {
+    const primary = selectSleepRecords(records, {
       preferredSessionIds: ['mirror'],
     });
     expect(
       primary.find((entry) => entry.status === 'primary')!.session.id,
     ).toBe('mirror');
     expect(
-      reconcileSleepRecords(records).find(
-        (entry) => entry.status === 'primary',
-      )!.session.id,
+      selectSleepRecords(records).find((entry) => entry.status === 'primary')!
+        .session.id,
     ).toBe('original');
     expect(() =>
-      reconcileSleepRecords(records, {
+      selectSleepRecords(records, {
         preferredSessionIds: ['mirror', 'original'],
       }),
     ).toThrow('conflicting-preferred-sessions');
     expect(() =>
-      reconcileSleepRecords(records, { preferredSessionIds: ['missing'] }),
+      selectSleepRecords(records, { preferredSessionIds: ['missing'] }),
     ).toThrow('unknown-preferred-session');
   });
 
-  it('reconciles native records with unknown local references using UTC only', () => {
+  it('selects native records with unknown local references using UTC only', () => {
     const raw = fixtures[0]!.records.map(record).map((entry) => ({
       ...entry,
       start: { utc: entry.start.utc, reference: null },
       end: { utc: entry.end.utc, reference: null },
       keyAssignment: null,
     }));
-    const selection = reconcileSleepRecords(raw);
+    const selection = selectSleepRecords(raw);
     expect(
       selection.find((entry) => entry.status === 'primary')!.session.id,
     ).toBe('original');
@@ -165,18 +164,14 @@ describe('immutable source reconciliation', () => {
       simple('c', 'c', '2026-10-04T00:00:00Z', '2026-10-04T02:00:00Z'),
     ];
     expect(
-      reconcileSleepRecords(records).filter(
-        (entry) => entry.status === 'primary',
-      ),
+      selectSleepRecords(records).filter((entry) => entry.status === 'primary'),
     ).toHaveLength(1);
     const below = [
       records[0]!,
       simple('b', 'b', '2026-10-03T23:00:00.001Z', '2026-10-04T01:00:00.001Z'),
     ];
     expect(
-      reconcileSleepRecords(below).filter(
-        (entry) => entry.status === 'primary',
-      ),
+      selectSleepRecords(below).filter((entry) => entry.status === 'primary'),
     ).toHaveLength(2);
   });
 
@@ -214,12 +209,12 @@ describe('immutable source reconciliation', () => {
       stages: ['LIGHT', 'DEEP'],
     });
     expect(
-      reconcileSleepRecords([generic, rich]).find(
+      selectSleepRecords([generic, rich]).find(
         (entry) => entry.status === 'primary',
       )!.session.id,
     ).toBe('manual');
     expect(
-      reconcileSleepRecords([simple('a'), simple('b')], {
+      selectSleepRecords([simple('a'), simple('b')], {
         otherMetrics: [
           { origin: 'b', startUtc: generic.start.utc, endUtc: generic.end.utc },
         ],
@@ -230,7 +225,7 @@ describe('immutable source reconciliation', () => {
   it('uses instantaneous other-metric evidence and excludes the sleep end boundary', () => {
     const raw = [simple('a'), simple('b')];
     const choose = (utc: string) =>
-      reconcileSleepRecords(raw, {
+      selectSleepRecords(raw, {
         otherMetrics: [{ origin: 'b', startUtc: utc, endUtc: utc }],
       }).find((entry) => entry.status === 'primary')!.session.id;
     expect(choose('2026-10-03T22:00:00Z')).toBe('b');
@@ -266,7 +261,7 @@ describe('immutable source reconciliation', () => {
       '2026-10-04T01:00:00.000000001Z',
     );
     expect(
-      reconcileSleepRecords([first, halfBelow]).filter(
+      selectSleepRecords([first, halfBelow]).filter(
         (entry) => entry.status === 'primary',
       ),
     ).toHaveLength(2);
@@ -279,13 +274,13 @@ describe('immutable source reconciliation', () => {
       lastModifiedUtc: '2026-10-04T06:00:00.000000001Z',
     };
     expect(
-      reconcileSleepRecords([a, b]).find((entry) => entry.status === 'primary')!
+      selectSleepRecords([a, b]).find((entry) => entry.status === 'primary')!
         .session.id,
     ).toBe('b');
   });
 
   it('retains distinct nanosecond samples and clips additive coverage without truncation', () => {
-    const result = reconcileDenseSamples(
+    const result = selectDenseSamples(
       [
         {
           id: 'a',
@@ -313,7 +308,7 @@ describe('immutable source reconciliation', () => {
     );
     expect(result.primaryOrigin).toBe('b');
     expect(result.primary.map((sample) => sample.id)).toEqual(['b1', 'b2']);
-    const coverage = reconcileAdditiveRecords(
+    const coverage = selectAdditiveRecords(
       [
         {
           id: 'a',
@@ -340,7 +335,7 @@ describe('immutable source reconciliation', () => {
       { id: 'b3', origin: 'b', utc: '2026-10-03T23:00:00Z', value: 64 },
       { id: 'outside', origin: 'a', utc: '2026-10-04T06:00:00Z', value: 65 },
     ];
-    const result = reconcileDenseSamples(samples, {
+    const result = selectDenseSamples(samples, {
       startUtc: '2026-10-03T22:00:00Z',
       endUtc: '2026-10-04T06:00:00Z',
     });
@@ -358,7 +353,7 @@ describe('immutable source reconciliation', () => {
       startUtc: '2026-10-04T00:00:00Z',
       endUtc: '2026-10-05T00:00:00Z',
     };
-    const result = reconcileAdditiveRecords(
+    const result = selectAdditiveRecords(
       [
         {
           id: 'a1',
@@ -427,7 +422,7 @@ describe('immutable source reconciliation', () => {
           );
           expect(
             totalSleepMilliseconds(
-              reconcileSleepRecords([...raw, ...duplicate]).flatMap(
+              selectSleepRecords([...raw, ...duplicate]).flatMap(
                 (entry) => entry.session.records,
               ),
             ),

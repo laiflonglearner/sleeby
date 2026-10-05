@@ -16,7 +16,7 @@ Phase 0 contains shared packages and tooling. No app or UI exists yet. Owner rev
 
 ## Workspace and dependencies
 
-- packages/domain: framework-free records, time handling, reconciliation, metrics, statistics, and exports.
+- packages/domain: framework-free records, time handling, source selection, metrics, statistics, and exports.
 - packages/copy: reviewed neutral templates and their resolvers.
 - packages/data: SQLite schema, Drizzle migrations, repositories, and the Dexie storage contract.
 - packages/config: shared TypeScript, ESLint, Prettier, and layering configuration.
@@ -29,7 +29,7 @@ Read packages/config/layering.mjs and scripts/check-layering.mjs before changing
 
 Read packages/domain/README.md before changing domain behavior, packages/copy/README.md before changing wording, and PRIVACY.md before changing data handling.
 
-Preserve original payloads and append-only history. Reconciliation and source selection must remain reversible. Derived caches must remain recomputable.
+Preserve original data and append-only history. Source selection must remain reversible. Derived caches must remain recomputable.
 
 Calculate elapsed durations from UTC instants and sleep totals from interval unions. Preserve timestamp precision and stored day or night keys with their boundaries. Missing native offsets remain unknown until an explicit localization reference is supplied.
 
@@ -77,7 +77,7 @@ Do not stage, commit, push, create a pull request, or deploy without specific au
 
 When authorized, include only reviewed task-owned paths. Never use blanket staging, bypass hooks, delete .git/index.lock, or reset another session's work.
 
-Do not import Lifelong Habit's main-only workflow or auto-push assumptions into Sleeby.
+Sleeby uses an open source branch workflow. Fixes, features, code changes, and public API changes happen on topic branches and reach main only through a reviewed pull request. Small documentation and instruction edits (README, AGENTS.md, CONTRIBUTING, typos, wording) may be committed directly on main without a branch. Never push to main unless the user explicitly authorizes it, and never push automatically after a commit. Do not import Lifelong Habit's main-only workflow or auto-push assumptions into Sleeby.
 
 Delegate only when the user or applicable instructions request it. Assign explicit file ownership and preserve other workers' changes.
 
@@ -85,8 +85,19 @@ Delegate only when the user or applicable instructions request it. Assign explic
 
 Create documents in Markdown unless another format is requested. Keep each paragraph, list item, and table row on one unwrapped line. Do not reflow untouched prose.
 
-Do not write em dashes. Preserve comments unless they are demonstrably useless or incorrect.
+Do not write em dashes. Never use the words forbidden in .agents/skills/commit-message/SKILL.md, including `reconcile` and its variants such as `reconciled` and `reconciliation`, in any text: documents, READMEs, code comments, issues, pull requests, commit messages, and reports. Avoid jargon and buzzwords; use plain words. Preserve comments unless they are demonstrably useless or incorrect.
 
 Update existing documentation when behavior changes. Do not invent links to nonexistent trackers, runbooks, apps, or packages.
 
 Keep handoffs concise: what changed, why, verification results, blockers, and the next action. Owner review determines acceptance.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

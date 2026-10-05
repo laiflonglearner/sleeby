@@ -13,7 +13,7 @@ import type {
   SourceTombstone,
   SubjectiveReport,
 } from './model.js';
-import type { SleepSelection } from './reconciliation.js';
+import type { SleepSelection } from './selection.js';
 import {
   instantMilliseconds,
   instantNanoseconds,

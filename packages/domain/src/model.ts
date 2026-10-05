@@ -55,7 +55,7 @@ export interface SleepStage extends Interval {
   readonly stage: SleepStageType;
 }
 
-/** Immutable sleep payload, with no derived or reconciled fields. */
+/** Immutable sleep payload, with no derived or selected fields. */
 export interface SleepPayload {
   readonly stages: readonly SleepStage[];
   readonly title?: string;

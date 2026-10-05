@@ -6,12 +6,12 @@ Phase 0 builds the shared packages and tooling. There is no app or UI yet. The t
 
 ## Workspace
 
-| Package          | Responsibility                                                                                        | Distribution                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `@sleeby/domain` | Framework-free records, time and keys, reconciliation, metrics, statistics, downsampling, and exports | Public package after Phase 2 approval |
-| `@sleeby/copy`   | Prewritten neutral templates and their resolver                                                       | Public package after Phase 2 approval |
-| `@sleeby/data`   | SQLite schema, migrations, repositories, and the Dexie storage contract                               | Private workspace package             |
-| `@sleeby/config` | Shared strict TypeScript, ESLint, and Prettier configuration                                          | Private workspace package             |
+| Package          | Responsibility                                                                                          | Distribution                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `@sleeby/domain` | Framework-free records, time and keys, source selection, metrics, statistics, downsampling, and exports | Public package after Phase 2 approval |
+| `@sleeby/copy`   | Prewritten neutral templates and their resolver                                                         | Public package after Phase 2 approval |
+| `@sleeby/data`   | SQLite schema, migrations, repositories, and the Dexie storage contract                                 | Private workspace package             |
+| `@sleeby/config` | Shared strict TypeScript, ESLint, and Prettier configuration                                            | Private workspace package             |
 
 Workspace globs reserve `apps/*`. No app directories exist in Phase 0. Platform adapters belong in future apps. The domain has no runtime dependencies; copy imports its types only. CI checks imports, re-exports, dynamic imports, relative-path escapes, and manifest dependencies.
 
@@ -23,9 +23,9 @@ The toolchain was verified against the official registries on 2026-10-04. TypeSc
 
 ## Data contracts
 
-Health catalog version 1 enumerates all 41 concrete records in stable Health Connect SDK 1.1.0. Catalog entries describe normalized units, raw views, and export mappings, but do not grant permissions or promise that a mobile view already ships. Experimental medical-resource APIs and newer alpha SDK types are excluded. Original native payloads remain intact alongside typed projections. Missing native offsets stay unknown until an explicit localization reference is supplied.
+Health catalog version 1 enumerates all 41 concrete records in stable Health Connect SDK 1.1.0. Catalog entries describe normalized units, raw views, and export mappings, but do not grant permissions or promise that a mobile view already ships. Experimental medical-resource APIs and newer alpha SDK types are excluded. Original native data remains intact alongside typed views. Missing native offsets stay unknown until an explicit localization reference is supplied.
 
-Raw storage is append-only. SQLite triggers prevent replacement, updates, and deletion. Source selection and derived caches live separately and can be recomputed. Night totals use UTC interval unions. Changing a day boundary never silently changes stored historical keys. An interrupted primary sleep session remains one night, consistent with the [Consensus Sleep Diary](https://pmc.ncbi.nlm.nih.gov/articles/PMC3250369/); selecting the session with the greatest unioned asleep duration is a reviewable app heuristic, not a clinical classifier.
+Raw storage is append-only. SQLite triggers prevent replacement, updates, and deletion. Source selection and derived caches live separately and can be recomputed. Night totals use UTC interval unions. Changing a day boundary never silently changes stored historical keys. An interrupted primary sleep session remains one night, consistent with the [Consensus Sleep Diary](https://pmc.ncbi.nlm.nih.gov/articles/PMC3250369/); selecting the session with the greatest unioned asleep duration is a reviewable app rule of thumb, not a clinical classifier.
 
 The three registered correlations join habit day D to night D. Meal and caffeine cutoff predictors use local cutoff minutes unwrapped at each habit's stored boundary, split at the median of complete days in the active window. Zero means below the median, one means at or above it. Ties stay together; at least five complete days are required in each group afterward. Screen-free duration versus morning energy uses Pearson with at least seven pairs. Binary comparisons display Welch intervals on later-minus-earlier mean differences and export point-biserial coefficients; continuous comparisons use Fisher z intervals. No multiple-pair search or wearable outcome pairs are included.
 

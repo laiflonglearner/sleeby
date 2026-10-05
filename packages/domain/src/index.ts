@@ -140,24 +140,24 @@ export type {
   HealthSource,
 } from './model.js';
 
-/** Public reconciliation operations and constants. */
+/** Public selection operations and constants. */
 export {
   reconstructSleepSessions,
-  reconcileSleepRecords,
-  reconcileDenseSamples,
-  reconcileAdditiveRecords,
-} from './reconciliation.js';
+  selectSleepRecords,
+  selectDenseSamples,
+  selectAdditiveRecords,
+} from './selection.js';
 
-/** Public reconciliation contracts. */
+/** Public selection contracts. */
 export type {
   OtherMetricCoverage,
   SleepSelection,
-  ReconciliationOptions,
+  SleepSelectionOptions,
   OriginSample,
   DenseSampleSelection,
   OriginInterval,
   AdditiveSelection,
-} from './reconciliation.js';
+} from './selection.js';
 
 /** Public statistics operations and constants. */
 export {

@@ -15,10 +15,10 @@ const result: CorrelationResult = {
   status: 'insufficient-data',
 };
 const copy = resolveCorrelationCopy(result);
-// copy.description: 'Not enough paired days yet for this comparison.'
+// copy.description: 'Not enough days with both measurements yet for this comparison.'
 ```
 
-`COPY_TEMPLATES` contains the initial phrase set. `resolveCorrelationCopy` covers insufficient observations, undefined calculations, both binary comparisons, Pearson comparisons, 95% intervals, and wide-range explanations. Binary wording explicitly labels earlier/later groups and the later-minus-earlier difference. `resolveTrendCopy` covers higher, lower, equal, insufficient, and unavailable states for a fixed set of metric labels. No resolver accepts arbitrary caller-written text.
+`COPY_TEMPLATES` contains the initial phrase set. `resolveCorrelationCopy` covers insufficient observations, undefined calculations, both binary comparisons, Pearson comparisons, 95% intervals, and wide-range explanations. Binary wording shows each group's average and size, the difference, and the hours-before-sleep mark. `resolveTrendCopy` covers higher, lower, equal, insufficient, and unavailable states for a fixed set of metric labels. No resolver accepts arbitrary caller-written text.
 
 Only numeric substitutions are formatted dynamically. Domain inputs supply machine states, counts, coefficients, and intervals. This package imports domain types only and has no domain runtime import or platform dependency. Templates describe observed values without causes, diagnoses, sleep scores, or recommendations. English is the first reviewed language contract; adding localization requires another deliberate template review.
 

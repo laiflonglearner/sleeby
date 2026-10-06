@@ -23,14 +23,21 @@
               "predictor": "lastMeal",
               "outcome": "awakeningCount",
               "method": "point-biserial",
-              "definition": "local-cutoff-minute-from-stored-boundary-at-or-above-window-median"
+              "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
             },
             {
               "id": "caffeine-awakenings",
               "predictor": "lastCaffeine",
               "outcome": "awakeningCount",
               "method": "point-biserial",
-              "definition": "local-cutoff-minute-from-stored-boundary-at-or-above-window-median"
+              "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "no-caffeine-awakenings",
+              "predictor": "caffeineFree",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
             },
             {
               "id": "screen-energy",
@@ -194,14 +201,21 @@
               "predictor": "lastMeal",
               "outcome": "awakeningCount",
               "method": "point-biserial",
-              "definition": "local-cutoff-minute-from-stored-boundary-at-or-above-window-median"
+              "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
             },
             {
               "id": "caffeine-awakenings",
               "predictor": "lastCaffeine",
               "outcome": "awakeningCount",
               "method": "point-biserial",
-              "definition": "local-cutoff-minute-from-stored-boundary-at-or-above-window-median"
+              "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "no-caffeine-awakenings",
+              "predictor": "caffeineFree",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
             },
             {
               "id": "screen-energy",
@@ -7224,6 +7238,9 @@
         "lastCaffeine": {
           "$ref": "#/$defs/timestamp"
         },
+        "caffeineFree": {
+          "type": "boolean"
+        },
         "morningSunlightMinutes": {
           "type": "number"
         },
@@ -7267,6 +7284,9 @@
         },
         "lastCaffeine": {
           "$ref": "#/$defs/relativeTimestamp"
+        },
+        "caffeineFree": {
+          "type": "boolean"
         },
         "morningSunlightMinutes": {
           "type": "number"
@@ -7598,6 +7618,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7622,8 +7643,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightKey": {
               "type": "string",
@@ -7654,6 +7679,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7678,8 +7704,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightKey": {
               "type": "string",
@@ -7723,8 +7753,8 @@
           ],
           "additionalProperties": false,
           "dependentRequired": {
-            "method": ["coefficient", "groupSizes", "medianCutoffMinute"],
-            "coefficient": ["method", "groupSizes", "medianCutoffMinute"]
+            "method": ["coefficient", "groupSizes"],
+            "coefficient": ["method", "groupSizes"]
           }
         },
         {
@@ -7734,6 +7764,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7758,8 +7789,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightKey": {
               "type": "string",
@@ -7806,6 +7841,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7830,8 +7866,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightKey": {
               "type": "string",
@@ -7887,8 +7927,7 @@
             "groupMeans",
             "confidenceInterval",
             "intervalWide",
-            "groupSizes",
-            "medianCutoffMinute"
+            "groupSizes"
           ],
           "additionalProperties": false
         }
@@ -7903,6 +7942,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7927,8 +7967,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightDayOffset": {
               "type": "integer"
@@ -7957,6 +8001,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -7981,8 +8026,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightDayOffset": {
               "type": "integer"
@@ -8024,8 +8073,8 @@
           ],
           "additionalProperties": false,
           "dependentRequired": {
-            "method": ["coefficient", "groupSizes", "medianCutoffMinute"],
-            "coefficient": ["method", "groupSizes", "medianCutoffMinute"]
+            "method": ["coefficient", "groupSizes"],
+            "coefficient": ["method", "groupSizes"]
           }
         },
         {
@@ -8035,6 +8084,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -8059,8 +8109,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightDayOffset": {
               "type": "integer"
@@ -8105,6 +8159,7 @@
               "enum": [
                 "meal-awakenings",
                 "caffeine-awakenings",
+                "no-caffeine-awakenings",
                 "screen-energy"
               ]
             },
@@ -8129,8 +8184,12 @@
               "minItems": 2,
               "maxItems": 2
             },
-            "medianCutoffMinute": {
-              "type": "number"
+            "hoursBeforeSleepLine": {
+              "type": "number",
+              "minimum": 0
+            },
+            "lineSource": {
+              "enum": ["chosen", "median"]
             },
             "startNightDayOffset": {
               "type": "integer"
@@ -8184,8 +8243,7 @@
             "groupMeans",
             "confidenceInterval",
             "intervalWide",
-            "groupSizes",
-            "medianCutoffMinute"
+            "groupSizes"
           ],
           "additionalProperties": false
         }

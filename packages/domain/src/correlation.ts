@@ -2,11 +2,10 @@ import {
   CORRELATION_WINDOWS,
   MINIMUM_BINARY_GROUP_DAYS,
   MINIMUM_CONTINUOUS_DAYS,
-  MINUTES_PER_DAY,
 } from './constants.js';
 import type { HabitEntry, SubjectiveReport } from './model.js';
-import { localClockMinutes } from './time.js';
-import type { KeyAssignment } from './time.js';
+import { instantNanoseconds } from './time.js';
+import type { KeyAssignment, Timestamp } from './time.js';
 import {
   fisherZConfidenceInterval,
   pearsonCorrelation,
@@ -20,7 +19,10 @@ import type {
 
 /** Versioned, fixed pair identifiers. Wearable metrics never enter this registry. */
 export type CorrelationPairId =
-  'meal-awakenings' | 'caffeine-awakenings' | 'screen-energy';
+  | 'meal-awakenings'
+  | 'caffeine-awakenings'
+  | 'no-caffeine-awakenings'
+  | 'screen-energy';
 
 /** Exact v1 predictor definitions, exported for reproducible consumers and exports. */
 export const CORRELATION_PAIRS = [
@@ -29,16 +31,21 @@ export const CORRELATION_PAIRS = [
     predictor: 'lastMeal',
     outcome: 'awakeningCount',
     method: 'point-biserial',
-    definition:
-      'local-cutoff-minute-from-stored-boundary-at-or-above-window-median',
+    definition: 'utc-hours-from-last-meal-to-sleep-start-at-or-above-line',
   },
   {
     id: 'caffeine-awakenings',
     predictor: 'lastCaffeine',
     outcome: 'awakeningCount',
     method: 'point-biserial',
-    definition:
-      'local-cutoff-minute-from-stored-boundary-at-or-above-window-median',
+    definition: 'utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line',
+  },
+  {
+    id: 'no-caffeine-awakenings',
+    predictor: 'caffeineFree',
+    outcome: 'awakeningCount',
+    method: 'point-biserial',
+    definition: 'nights-with-no-caffeine-versus-nights-with-caffeine',
   },
   {
     id: 'screen-energy',
@@ -52,6 +59,8 @@ export const CORRELATION_PAIRS = [
 /** Authoritative, already-selected night outcome, never inferred from logging time. */
 export interface NightOutcome {
   readonly nightAssignment: KeyAssignment;
+  /** Start of the primary sleep session already chosen for this night. Never inferred from logging time. */
+  readonly sleepStart?: Timestamp;
   readonly awakeningCount?: number;
   readonly morningEnergy?: number;
 }
@@ -62,7 +71,14 @@ export interface CorrelationOptions {
   readonly windowDays: (typeof CORRELATION_WINDOWS)[number];
   readonly wideAwakeningIntervalWidth?: number;
   readonly widePearsonIntervalWidth?: number;
+  /** Dividing line in hours before sleep for the last meal. Absent means the window median. */
+  readonly mealHoursBeforeSleepLine?: number;
+  /** Dividing line in hours before sleep for the last caffeine. Absent means the window median. */
+  readonly caffeineHoursBeforeSleepLine?: number;
 }
+
+/** Whether the dividing line came from the caller or from the window median. */
+export type HoursLineSource = 'chosen' | 'median';
 
 /** Presentation width policy, two awakenings. This is not a medical threshold. */
 export const DEFAULT_WIDE_AWAKENING_INTERVAL_WIDTH = 2;
@@ -77,7 +93,8 @@ export interface CorrelationMetadata {
   readonly endNightKey: string;
   readonly sampleSize: number;
   readonly groupSizes?: readonly [number, number];
-  readonly medianCutoffMinute?: number;
+  readonly hoursBeforeSleepLine?: number;
+  readonly lineSource?: HoursLineSource;
 }
 
 /** Machine states resolved to reviewed templates only by the copy package. A valid binary coefficient remains exportable when its Welch interval is undefined. */
@@ -94,7 +111,8 @@ export type CorrelationResult = CorrelationMetadata &
               method: 'point-biserial';
               coefficient: number;
               groupSizes: readonly [number, number];
-              medianCutoffMinute: number;
+              hoursBeforeSleepLine?: number;
+              lineSource?: HoursLineSource;
             }>
         ))
     | Readonly<{
@@ -110,12 +128,15 @@ export type CorrelationResult = CorrelationMetadata &
         coefficient: number;
         difference: number;
         groupSizes: readonly [number, number];
-        medianCutoffMinute: number;
+        hoursBeforeSleepLine?: number;
+        lineSource?: HoursLineSource;
         groupMeans: readonly [number, number];
         confidenceInterval: ConfidenceInterval;
         intervalWide: boolean;
       }>
   );
+
+const NANOSECONDS_PER_HOUR = 3_600_000_000_000;
 
 function calendarEpoch(key: string): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(key))
@@ -163,9 +184,9 @@ export function outcomeFromReport(report: SubjectiveReport): NightOutcome {
 }
 
 /**
- * Analyze only the three registered day-D/night-D pairs, using complete tracked days.
+ * Analyze only the registered day-D/night-D pairs, using complete tracked days.
  *
- * @remarks Callers select one authoritative habit row and outcome per key. Duplicate keys are rejected rather than silently choosing a revision. Binary cutoff times are localized in their own stored references, unwrapped at the habit's stored boundary, and split at the qualifying window median (zero below, one at or above). Ties stay together, and the five-per-side gate is checked after splitting. Missing caffeine is missing data, never a zero-coded observation. Windows include their final night and use calendar keys, independently of UTC day length.
+ * @remarks Callers select one authoritative habit row and outcome per key. Duplicate keys are rejected rather than silently choosing a revision. Meal and caffeine are measured in hours before sleep: elapsed UTC hours from the last meal or caffeine to the night's `sleepStart`, which the caller supplies. A night with a missing meal, caffeine, or sleep start is missing data, never zero hours, and a meal or caffeine after sleep start is rejected as an invalid predictor. Nights are split at the caller's dividing line, or at the window median when none is given: zero is fewer hours before sleep, one is at or above the line, and ties go to one. The five-per-side gate is checked after splitting. The no-caffeine pair compares nights marked `caffeineFree` (zero) with nights that have a last caffeine time (one); a night marked caffeine free that also has a caffeine time is rejected. Missing caffeine without that mark is missing data. Windows include their final night and use calendar keys, independently of UTC day length.
  */
 export function analyzeCorrelations(
   habits: readonly HabitEntry[],
@@ -206,14 +227,20 @@ export function analyzeCorrelations(
         throw new RangeError('invalid-outcome');
       let x: number | undefined;
       if (pair.predictor === 'screenFreeMinutes') x = habit.screenFreeMinutes;
-      else {
-        const cutoff = habit[pair.predictor];
-        if (cutoff)
-          x =
-            (localClockMinutes(cutoff) -
-              habit.keyAssignment.boundaryMinutes +
-              MINUTES_PER_DAY) %
-            MINUTES_PER_DAY;
+      else if (pair.predictor === 'caffeineFree') {
+        if (habit.caffeineFree && habit.lastCaffeine)
+          throw new RangeError('invalid-predictor');
+        if (habit.caffeineFree) x = 0;
+        else if (habit.lastCaffeine) x = 1;
+      } else {
+        const last = habit[pair.predictor];
+        if (last && night?.sleepStart) {
+          const elapsed =
+            instantNanoseconds(night.sleepStart.utc) -
+            instantNanoseconds(last.utc);
+          if (elapsed < 0n) throw new RangeError('invalid-predictor');
+          x = Number(elapsed) / NANOSECONDS_PER_HOUR;
+        }
       }
       if (x === undefined) continue;
       if (!Number.isFinite(x) || x < 0)
@@ -250,6 +277,14 @@ export function analyzeCorrelations(
           interval.value.upper - interval.value.lower > pearsonWidth,
       };
     }
+    const chosen =
+      pair.predictor === 'lastMeal'
+        ? options.mealHoursBeforeSleepLine
+        : pair.predictor === 'lastCaffeine'
+          ? options.caffeineHoursBeforeSleepLine
+          : undefined;
+    if (chosen !== undefined && (!Number.isFinite(chosen) || chosen < 0))
+      throw new RangeError('invalid-hours-before-sleep-line');
     const ordered = predictor.slice().sort((a, b) => a - b);
     const midpoint = Math.floor(ordered.length / 2);
     const median =
@@ -258,13 +293,26 @@ export function analyzeCorrelations(
         : ordered.length % 2
           ? ordered[midpoint]!
           : (ordered[midpoint - 1]! + ordered[midpoint]!) / 2;
-    const binary = predictor.map((x) => (x < median! ? 0 : 1));
+    const hoursPair = pair.predictor !== 'caffeineFree';
+    const line = hoursPair ? (chosen ?? median) : undefined;
+    const binary = hoursPair
+      ? predictor.map((x) => (x < line! ? 0 : 1))
+      : predictor;
+    const lineFields =
+      line === undefined
+        ? {}
+        : {
+            hoursBeforeSleepLine: line,
+            lineSource: (chosen === undefined
+              ? 'median'
+              : 'chosen') as HoursLineSource,
+          };
     const zero = response.filter((_, index) => binary[index] === 0);
     const one = response.filter((_, index) => binary[index] === 1);
     const binaryMetadata = {
       ...metadata,
       groupSizes: [zero.length, one.length] as const,
-      ...(median === undefined ? {} : { medianCutoffMinute: median }),
+      ...lineFields,
     };
     if (
       zero.length < MINIMUM_BINARY_GROUP_DAYS ||
@@ -281,14 +329,14 @@ export function analyzeCorrelations(
         ...comparison,
         method: 'point-biserial',
         coefficient: correlation.value,
-        medianCutoffMinute: median!,
+        ...lineFields,
       };
     const value = comparison.value;
     return {
       ...binaryMetadata,
       status: 'computed',
       method: 'point-biserial',
-      medianCutoffMinute: median!,
+      ...lineFields,
       coefficient: correlation.value,
       difference: value.difference,
       groupMeans: [value.groupZeroMean, value.groupOneMean],

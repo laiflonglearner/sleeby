@@ -324,6 +324,8 @@ export interface HabitEntry {
   readonly monitoring: 'tracked' | 'rest' | 'unmonitored';
   readonly lastMeal?: Timestamp;
   readonly lastCaffeine?: Timestamp;
+  /** True when the person had no caffeine that day. Without it, a missing last caffeine time is missing data. */
+  readonly caffeineFree?: boolean;
   readonly morningSunlightMinutes?: number;
   readonly afternoonSunlightMinutes?: number;
   readonly movementCompleted?: boolean;

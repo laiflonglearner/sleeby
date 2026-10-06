@@ -596,6 +596,7 @@ function anonymize(
           'movementCompleted',
           'movementMinutes',
           'screenFreeMinutes',
+          'caffeineFree',
         ]),
         ...(habit.lastMeal === undefined
           ? {}
@@ -672,8 +673,16 @@ function anonymize(
         ...numericFields(correlation, [
           'windowDays',
           'sampleSize',
-          'medianCutoffMinute',
+          'hoursBeforeSleepLine',
         ]),
+        ...(correlation.lineSource === undefined
+          ? {}
+          : {
+              lineSource: knownCode(correlation.lineSource, [
+                'chosen',
+                'median',
+              ]),
+            }),
         ...(correlation.groupSizes === undefined
           ? {}
           : { groupSizes: correlation.groupSizes.map(anonymousNumber) }),

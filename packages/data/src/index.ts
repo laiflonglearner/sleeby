@@ -8,6 +8,7 @@ export {
   recordSelections,
   sourceTombstones,
   subjectiveReports,
+  trackingSettings,
 } from './schema.js';
 /** Browser mirror contracts, without importing Dexie into the native storage package. */
 export {
@@ -28,6 +29,7 @@ export type {
   DexieStoreRows,
   DexieSubjectiveReportRow,
   DexieTombstoneRow,
+  DexieTrackingSettingsRow,
 } from './dexie-contract.js';
 /** Bounded append-only repository implementation and its page limit. */
 export { MAX_STORAGE_PAGE_RECORDS, SleebyRepository } from './repository.js';
@@ -35,6 +37,9 @@ export { MAX_STORAGE_PAGE_RECORDS, SleebyRepository } from './repository.js';
 export type {
   RawPageCursor,
   RawRecordPage,
+  NightPageCursor,
+  NightPage,
+  NightHistoryPage,
   SourceTombstone,
   SQLiteDatabase,
   SQLiteStatement,

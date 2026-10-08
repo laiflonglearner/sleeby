@@ -6,6 +6,7 @@ import type {
   Night,
   RawRecord,
   SubjectiveReport,
+  TrackingSettings,
 } from '@sleeby/domain';
 import type {
   SourceTombstone,
@@ -15,7 +16,7 @@ import type {
 import { storageUtcIndex } from './storage-time.js';
 
 /** Mirror version shared with the private browser adapter, which supplies its own Dexie dependency. */
-export const DEXIE_SCHEMA_VERSION = 1;
+export const DEXIE_SCHEMA_VERSION = 2;
 
 /** IndexedDB store and index names mirror SQLite semantics; JSON objects remain structured values. */
 export const DEXIE_STORES = Object.freeze({
@@ -28,6 +29,7 @@ export const DEXIE_STORES = Object.freeze({
   recordSelections: 'recordId,logicalSessionId,supersededBy',
   derivedCache: 'key',
   importCursors: 'source',
+  trackingSettings: 'id,supersedesId',
 });
 
 /** Flattened index columns surround the unchanged immutable native envelope. */
@@ -115,6 +117,7 @@ export interface DexieStoreRows {
   readonly recordSelections: DexieSelectionRow;
   readonly derivedCache: DexieDerivedCacheRow;
   readonly importCursors: DexieImportCursorRow;
+  readonly trackingSettings: DexieTrackingSettingsRow;
 }
 
 /** Typed source values supplied to flattening mappers by a browser storage adapter. */
@@ -127,6 +130,15 @@ export interface DexieStoreInputs {
   readonly recordSelections: StoredSelection;
   readonly derivedCache: DexieDerivedCacheRow;
   readonly importCursors: DexieImportCursorRow;
+  readonly trackingSettings: StoredRevision<TrackingSettings>;
+}
+
+/** Browser preferences retain their original value and predecessor. */
+export interface DexieTrackingSettingsRow {
+  readonly id: string;
+  readonly timestampUtc: string;
+  readonly supersedesId?: string;
+  readonly data: TrackingSettings;
 }
 
 /** Flatten every indexed path, omitting missing values that IndexedDB cannot index. */
@@ -135,6 +147,15 @@ export const DEXIE_ROW_MAPPERS: Readonly<{
     value: DexieStoreInputs[K],
   ) => DexieStoreRows[K];
 }> = Object.freeze({
+  trackingSettings: ({
+    value,
+    supersedesId,
+  }: StoredRevision<TrackingSettings>): DexieTrackingSettingsRow => ({
+    id: value.id,
+    timestampUtc: storageUtcIndex(value.timestamp.utc),
+    ...(supersedesId === null ? {} : { supersedesId }),
+    data: value,
+  }),
   rawRecords: (record: RawRecord): DexieRawRecordRow => ({
     id: record.id,
     type: record.type,
@@ -206,13 +227,20 @@ export const DEXIE_ROW_MAPPERS: Readonly<{
 
 /** IndexedDB cannot use SQLite triggers. A mirror must provide these transaction guarantees. */
 export const STORAGE_CONTRACT = Object.freeze({
-  version: 1,
+  version: 2,
+  upgrade: Object.freeze({
+    from: 1,
+    to: 2,
+    addedStores: Object.freeze(['trackingSettings']),
+    retainExistingValues: true,
+  }),
   immutableStores: Object.freeze([
     'rawRecords',
     'habitEntries',
     'nights',
     'subjectiveReports',
     'sourceTombstones',
+    'trackingSettings',
   ]),
   mutableStores: Object.freeze([
     'recordSelections',

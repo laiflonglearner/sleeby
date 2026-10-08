@@ -76,6 +76,7 @@ describe('committed Drizzle migrations', () => {
     'nights',
     'subjective_reports',
     'source_tombstones',
+    'tracking_settings',
   ] as const;
 
   it.each(immutableTables)(
@@ -89,6 +90,17 @@ describe('committed Drizzle migrations', () => {
           reference: { kind: 'offset', offsetSeconds: -18_000 },
         } as const;
         const keyAssignment = { key: '2025-03-08', boundaryMinutes: 240 };
+        repository.saveTrackingSettings(
+          {
+            id: 'original',
+            timestamp,
+            target: null,
+            dayBoundaryMinutes: 240,
+            privacyNoteAcknowledged: true,
+            strongerContrast: false,
+          },
+          null,
+        );
         repository.appendRawRecords([record('original')]);
         repository.appendHabit({
           id: 'original',
@@ -511,7 +523,7 @@ describe('typed append-only repositories', () => {
     }
   });
 
-  it('declares the same eight stores and immutable/derived separation for the Dexie mirror', () => {
+  it('declares the same nine stores and immutable/derived separation for the Dexie mirror', () => {
     expect(Object.keys(DEXIE_STORES).sort()).toEqual(
       Object.keys(schema).sort(),
     );
@@ -521,6 +533,7 @@ describe('typed append-only repositories', () => {
       'nights',
       'subjectiveReports',
       'sourceTombstones',
+      'trackingSettings',
     ]);
     expect(STORAGE_CONTRACT.mutableStores).toEqual([
       'recordSelections',

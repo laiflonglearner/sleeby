@@ -1,5 +1,6 @@
 import {
   HEALTH_CATALOG,
+  assignDayKey,
   instantNanoseconds,
   normalizeUtcInstant,
   type HabitEntry,
@@ -7,6 +8,8 @@ import {
   type RawRecord,
   type SourceTombstone,
   type SubjectiveReport,
+  type TrackingSettings,
+  type SleepRecord,
 } from '@sleeby/domain';
 import { storageUtcIndex } from './storage-time.js';
 
@@ -45,6 +48,24 @@ export interface RawRecordPage {
 export interface StoredRevision<T> {
   readonly value: T;
   readonly supersedesId: string | null;
+}
+
+/** Stable descending position for the saved-night list. */
+export interface NightPageCursor {
+  readonly key: string;
+  readonly id: string;
+}
+
+/** Bounded saved-night list. */
+export interface NightPage {
+  readonly nights: readonly Night[];
+  readonly nextCursor: NightPageCursor | null;
+}
+
+/** Bounded ancestry, starting with the current version. */
+export interface NightHistoryPage {
+  readonly revisions: readonly StoredRevision<Night>[];
+  readonly nextCursor: string | null;
 }
 
 /** Stored reversible primary/suppressed state for each raw fragment. */
@@ -119,6 +140,344 @@ export class SleebyRepository {
       this.database.exec('ROLLBACK');
       throw error;
     }
+  }
+
+  private current<T>(
+    table: 'habit_entries' | 'nights' | 'tracking_settings',
+    key?: string,
+  ): StoredRevision<T> | null {
+    const column = table === 'habit_entries' ? 'day_key' : 'night_key';
+    const clause = key === undefined ? '' : `AND p.${column} = ?`;
+    const args = key === undefined ? [] : [key];
+    const rows = this.statement(
+      `SELECT p.* FROM ${table} p WHERE NOT EXISTS (SELECT 1 FROM ${table} c WHERE c.supersedes_id = p.id) ${clause} LIMIT 2`,
+    ).all(...args);
+    const total = this.statement(
+      `SELECT COUNT(*) AS count FROM ${table} ${key === undefined ? '' : `WHERE ${column} = ?`}`,
+    ).get(...args)?.['count'];
+    if (total === 0) return null;
+    if (rows.length !== 1) throw new RangeError('conflicting-entry-heads');
+    const row = rows[0]!;
+    const chain = this.statement(
+      `WITH RECURSIVE chain AS (SELECT * FROM ${table} WHERE id = ? UNION ALL SELECT p.* FROM ${table} p JOIN chain c ON p.id = c.supersedes_id) SELECT COUNT(*) AS count ${key === undefined ? '' : `,SUM(CASE WHEN ${column} = ? AND boundary_minutes = ? THEN 0 ELSE 1 END) AS invalid`} FROM chain`,
+    ).get(
+      String(row['id']),
+      ...(key === undefined ? [] : [key, Number(row['boundary_minutes'])]),
+    );
+    if (
+      chain?.['count'] !== total ||
+      (key !== undefined && chain?.['invalid'] !== 0)
+    )
+      throw new RangeError('conflicting-entry-ancestry');
+    return {
+      value: json<T>(row),
+      supersedesId: row['supersedes_id'] as string | null,
+    };
+  }
+
+  private retry(
+    table: 'habit_entries' | 'nights' | 'tracking_settings',
+    value: { readonly id: string },
+    expected: string | null,
+  ): boolean {
+    if (!value.id || value.id === expected)
+      throw new RangeError('invalid-entry-id');
+    const row = this.statement(
+      `SELECT data_json,supersedes_id FROM ${table} WHERE id = ?`,
+    ).get(value.id);
+    if (!row) return false;
+    if (
+      row['data_json'] !== JSON.stringify(value) ||
+      row['supersedes_id'] !== expected
+    )
+      throw new RangeError('conflicting-entry-id');
+    return true;
+  }
+
+  private predecessor<T extends { readonly id: string }>(
+    current: StoredRevision<T> | null,
+    expected: string | null,
+  ): T | null {
+    if ((current?.value.id ?? null) !== expected)
+      throw new RangeError('stale-entry');
+    return current?.value ?? null;
+  }
+
+  /** Read the daily head through its full ancestry. */
+  readCurrentHabit(key: string): StoredRevision<HabitEntry> | null {
+    keyValid(key, 0);
+    return this.current<HabitEntry>('habit_entries', key);
+  }
+
+  /** Read the night head without choosing by time or ID. */
+  readCurrentNight(key: string): StoredRevision<Night> | null {
+    keyValid(key, 0);
+    return this.current<Night>('nights', key);
+  }
+
+  /** Read the active explicit preferences. */
+  readCurrentTrackingSettings(): StoredRevision<TrackingSettings> | null {
+    return this.current<TrackingSettings>('tracking_settings');
+  }
+
+  private settingsValid(value: TrackingSettings): void {
+    canonicalUtc(value.timestamp.utc);
+    keyValid('2026-01-01', value.dayBoundaryMinutes);
+    if (
+      typeof value.privacyNoteAcknowledged !== 'boolean' ||
+      typeof value.strongerContrast !== 'boolean'
+    )
+      throw new RangeError('invalid-preferences');
+    if (value.target !== null) {
+      keyValid('2026-01-01', value.target.bedtimeMinutes);
+      keyValid('2026-01-01', value.target.wakeMinutes);
+      if (value.target.bedtimeMinutes === value.target.wakeMinutes)
+        throw new RangeError('empty-target-window');
+    }
+  }
+
+  /** Append preferences atomically; exact retries keep the same version. */
+  saveTrackingSettings(value: TrackingSettings, expected: string | null): void {
+    this.settingsValid(value);
+    this.transaction(() => {
+      if (this.retry('tracking_settings', value, expected)) return;
+      this.predecessor(this.readCurrentTrackingSettings(), expected);
+      this.statement(
+        'INSERT INTO tracking_settings (id,timestamp_utc,supersedes_id,data_json) VALUES (?,?,?,?)',
+      ).run(
+        value.id,
+        storageUtcIndex(value.timestamp.utc),
+        expected,
+        JSON.stringify(value),
+      );
+    });
+  }
+
+  /** Append a complete daily snapshot after checking its saved predecessor. */
+  saveManualHabit(value: HabitEntry, expected: string | null): void {
+    canonicalUtc(value.timestamp.utc);
+    keyValid(value.keyAssignment.key, value.keyAssignment.boundaryMinutes);
+    if (!['tracked', 'rest', 'unmonitored'].includes(value.monitoring))
+      throw new RangeError('invalid-monitoring');
+    if (value.caffeineFree === true && value.lastCaffeine !== undefined)
+      throw new RangeError('conflicting-caffeine');
+    for (const field of [
+      'morningSunlightMinutes',
+      'afternoonSunlightMinutes',
+      'movementMinutes',
+      'screenFreeMinutes',
+    ] as const) {
+      const minutes = value[field];
+      if (minutes !== undefined && (!Number.isInteger(minutes) || minutes < 0))
+        throw new RangeError('invalid-minutes');
+    }
+    for (const field of ['caffeineFree', 'movementCompleted'] as const)
+      if (value[field] !== undefined && typeof value[field] !== 'boolean')
+        throw new RangeError('invalid-boolean');
+    for (const stamp of [value.lastMeal, value.lastCaffeine]) {
+      if (!stamp) continue;
+      canonicalUtc(stamp.utc);
+      if (
+        assignDayKey(stamp, value.keyAssignment.boundaryMinutes).key !==
+        value.keyAssignment.key
+      )
+        throw new RangeError('time-outside-day');
+    }
+    this.transaction(() => {
+      if (this.retry('habit_entries', value, expected)) return;
+      const old = this.predecessor(
+        this.readCurrentHabit(value.keyAssignment.key),
+        expected,
+      );
+      if (!old) {
+        const settings = this.readCurrentTrackingSettings()?.value;
+        if (
+          !settings ||
+          settings.dayBoundaryMinutes !== value.keyAssignment.boundaryMinutes
+        )
+          throw new RangeError('day-start-not-confirmed');
+      } else if (
+        old.keyAssignment.boundaryMinutes !==
+        value.keyAssignment.boundaryMinutes
+      )
+        throw new RangeError('changed-historical-boundary');
+      this.appendHabit(value, expected);
+    });
+  }
+
+  private nightValid(value: Night, old: Night | null): void {
+    keyValid(value.keyAssignment.key, value.keyAssignment.boundaryMinutes);
+    if (
+      new Set(value.sessionIds).size !== value.sessionIds.length ||
+      value.sessionIds.length > MAX_STORAGE_PAGE_RECORDS ||
+      (value.primarySessionId !== null &&
+        !value.sessionIds.includes(value.primarySessionId))
+    )
+      throw new RangeError('invalid-main-sleep');
+    if (old) {
+      if (
+        JSON.stringify(old.keyAssignment) !==
+          JSON.stringify(value.keyAssignment) ||
+        JSON.stringify(old.target) !== JSON.stringify(value.target)
+      )
+        throw new RangeError('changed-historical-night');
+    } else {
+      const settings = this.readCurrentTrackingSettings()?.value;
+      if (
+        !settings ||
+        settings.dayBoundaryMinutes !== value.keyAssignment.boundaryMinutes ||
+        JSON.stringify(settings.target) !== JSON.stringify(value.target)
+      )
+        throw new RangeError('day-start-not-confirmed');
+    }
+  }
+
+  /** Save one manual interval and its night version in the same transaction. */
+  saveManualSleep(
+    sleep: SleepRecord,
+    night: Night,
+    expected: string | null,
+    replacesId: string | null = null,
+  ): void {
+    this.transaction(() => {
+      if (this.retry('nights', night, expected)) {
+        const row = this.statement(
+          'SELECT data_json FROM raw_records WHERE id = ?',
+        ).get(sleep.id);
+        if (row?.['data_json'] !== JSON.stringify(sleep))
+          throw new RangeError('conflicting-sleep-id');
+        return;
+      }
+      const old = this.predecessor(
+        this.readCurrentNight(night.keyAssignment.key),
+        expected,
+      );
+      this.nightValid(night, old);
+      if (
+        sleep.source !== 'manual' ||
+        sleep.recordingMethod !== 'manual' ||
+        sleep.origin !== 'org.sleeby.app' ||
+        sleep.device !== null ||
+        sleep.externalId !== null ||
+        sleep.payload.stages.length !== 0 ||
+        JSON.stringify(sleep.keyAssignment) !==
+          JSON.stringify(night.keyAssignment)
+      )
+        throw new RangeError('invalid-manual-sleep');
+      const ids = old?.sessionIds ?? [];
+      if (replacesId !== null && !ids.includes(replacesId))
+        throw new RangeError('missing-edited-sleep');
+      const next =
+        replacesId === null
+          ? [...ids, sleep.id]
+          : ids.map((id) => (id === replacesId ? sleep.id : id));
+      if (JSON.stringify(next) !== JSON.stringify(night.sessionIds))
+        throw new RangeError('changed-sleep-membership');
+      const primary = old?.primarySessionId ?? null;
+      if (
+        old &&
+        night.primarySessionId !==
+          (replacesId !== null && primary === replacesId ? sleep.id : primary)
+      )
+        throw new RangeError('changed-main-choice');
+      if (sleep.start.reference === null || sleep.end.reference === null)
+        throw new RangeError('missing-time-reference');
+      if (
+        !old &&
+        assignDayKey(
+          { ...sleep.start, reference: sleep.start.reference },
+          night.keyAssignment.boundaryMinutes,
+        ).key !== night.keyAssignment.key
+      )
+        throw new RangeError('time-outside-night');
+      if (
+        this.statement('SELECT id FROM raw_records WHERE id = ?').get(sleep.id)
+      )
+        throw new RangeError('sleep-id-used');
+      this.appendRaw(sleep);
+      this.appendNight(night, expected);
+    });
+  }
+
+  /** Append an explicit main choice without changing interval membership. */
+  saveMainSleepChoice(night: Night, expected: string): void {
+    this.transaction(() => {
+      if (this.retry('nights', night, expected)) return;
+      const old = this.predecessor(
+        this.readCurrentNight(night.keyAssignment.key),
+        expected,
+      );
+      if (!old) throw new RangeError('missing-night');
+      this.nightValid(night, old);
+      if (JSON.stringify(old.sessionIds) !== JSON.stringify(night.sessionIds))
+        throw new RangeError('changed-sleep-membership');
+      this.appendNight(night, expected);
+    });
+  }
+
+  /** Fetch only the named intervals, preserving their requested order. */
+  readSleepByIds(ids: readonly string[]): readonly SleepRecord[] {
+    if (ids.length > MAX_STORAGE_PAGE_RECORDS)
+      throw new RangeError('sleep-page-too-large');
+    return ids.map((id) => {
+      const row = this.statement(
+        "SELECT data_json FROM raw_records WHERE id = ? AND type = 'sleepSession'",
+      ).get(id);
+      if (!row) throw new RangeError('missing-sleep');
+      return json<SleepRecord>(row);
+    });
+  }
+
+  /** Page current nights by their saved calendar key and ID. */
+  readNightPage(limit = 30, cursor?: NightPageCursor): NightPage {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 30)
+      throw new RangeError('invalid-page-size');
+    if (cursor) keyValid(cursor.key, 0);
+    const rows = this.statement(
+      `SELECT p.* FROM nights p WHERE NOT EXISTS (SELECT 1 FROM nights c WHERE c.supersedes_id = p.id) ${cursor ? 'AND (night_key,id) < (?,?)' : ''} ORDER BY night_key DESC,id DESC LIMIT ?`,
+    ).all(...(cursor ? [cursor.key, cursor.id] : []), limit + 1);
+    const nights = rows.slice(0, limit).map((row) => {
+      const value = json<Night>(row);
+      this.readCurrentNight(value.keyAssignment.key);
+      return value;
+    });
+    const last = nights.at(-1);
+    return {
+      nights,
+      nextCursor:
+        rows.length > limit && last
+          ? { key: last.keyAssignment.key, id: last.id }
+          : null,
+    };
+  }
+
+  /** Follow actual predecessor links in bounded pages. */
+  readNightHistoryPage(
+    key: string,
+    limit = 50,
+    cursor?: string,
+  ): NightHistoryPage {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50)
+      throw new RangeError('invalid-page-size');
+    const head = this.readCurrentNight(key);
+    if (!head) return { revisions: [], nextCursor: null };
+    if (
+      cursor &&
+      !this.statement(
+        'WITH RECURSIVE chain AS (SELECT id,supersedes_id FROM nights WHERE id = ? UNION ALL SELECT p.id,p.supersedes_id FROM nights p JOIN chain c ON p.id = c.supersedes_id) SELECT id FROM chain WHERE id = ?',
+      ).get(head.value.id, cursor)
+    )
+      throw new RangeError('invalid-history-cursor');
+    const rows = this.statement(
+      'WITH RECURSIVE chain AS (SELECT *,0 AS depth FROM nights WHERE id = ? UNION ALL SELECT p.*,c.depth+1 FROM nights p JOIN chain c ON p.id = c.supersedes_id WHERE c.depth < ?) SELECT * FROM chain ORDER BY depth',
+    ).all(cursor ?? head.value.id, limit);
+    return {
+      revisions: rows.slice(0, limit).map((row) => ({
+        value: json<Night>(row),
+        supersedesId: row['supersedes_id'] as string | null,
+      })),
+      nextCursor: rows.length > limit ? String(rows[limit]!['id']) : null,
+    };
   }
 
   private appendRaw(record: RawRecord): void {

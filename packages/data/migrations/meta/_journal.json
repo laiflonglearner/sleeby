@@ -15,6 +15,13 @@
       "when": 1791094234734,
       "tag": "0001_immutable_history",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791472306744,
+      "tag": "0002_manual_tracking",
+      "breakpoints": true
     }
   ]
 }

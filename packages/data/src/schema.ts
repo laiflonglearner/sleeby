@@ -3,6 +3,7 @@ import type {
   Night,
   RawRecord,
   SubjectiveReport,
+  TrackingSettings,
 } from '@sleeby/domain';
 import { sql } from 'drizzle-orm';
 import {
@@ -70,6 +71,7 @@ export const habitEntries = sqliteTable(
   },
   (table) => [
     index('habit_entries_day_idx').on(table.dayKey, table.timestampUtc),
+    index('habit_entries_parent_idx').on(table.supersedesId),
     check(
       'habit_entries_boundary_check',
       sql`${table.boundaryMinutes} BETWEEN 0 AND 1439`,
@@ -92,6 +94,7 @@ export const nights = sqliteTable(
   },
   (table) => [
     index('nights_key_idx').on(table.nightKey),
+    index('nights_parent_idx').on(table.supersedesId),
     check(
       'nights_boundary_check',
       sql`${table.boundaryMinutes} BETWEEN 0 AND 1439`,
@@ -189,3 +192,22 @@ export const importCursors = sqliteTable('import_cursors', {
   cursor: text('cursor'),
   updatedAtUtc: text('updated_at_utc').notNull(),
 });
+
+/** Immutable preferences; earlier choices remain available by ancestry. */
+export const trackingSettings = sqliteTable(
+  'tracking_settings',
+  {
+    id: text('id').primaryKey(),
+    timestampUtc: text('timestamp_utc').notNull(),
+    supersedesId: text('supersedes_id').references(
+      (): AnySQLiteColumn => trackingSettings.id,
+    ),
+    data: text('data_json', { mode: 'json' })
+      .$type<TrackingSettings>()
+      .notNull(),
+  },
+  (table) => [
+    index('tracking_settings_parent_idx').on(table.supersedesId),
+    check('tracking_settings_json_check', sql`json_valid(${table.data})`),
+  ],
+);

@@ -153,6 +153,17 @@ it('materializes every declared Dexie index path and preserves original source v
     observedAtUtc: timestamp.utc,
   };
   const rows: DexieStoreRows = {
+    trackingSettings: DEXIE_ROW_MAPPERS.trackingSettings({
+      value: {
+        id: 'settings',
+        timestamp,
+        target: null,
+        dayBoundaryMinutes: 240,
+        privacyNoteAcknowledged: true,
+        strongerContrast: false,
+      },
+      supersedesId: 'previous-settings',
+    }),
     rawRecords: DEXIE_ROW_MAPPERS.rawRecords(raw),
     habitEntries: DEXIE_ROW_MAPPERS.habitEntries({
       value: habit,

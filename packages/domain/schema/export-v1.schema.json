@@ -1,806 +1,364 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:sleeby:export",
-  "title": "Sleeby export versions 1 and 2",
+  "$id": "urn:sleeby:export:v1",
+  "title": "Sleeby export v1",
   "description": "Versioned raw and allowlisted anonymized JSON envelopes. CSV is the documented reversible long-form representation of these entries.",
   "oneOf": [
     {
-      "if": {
-        "properties": {
-          "schemaVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "raw"
-          }
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
         },
-        "required": ["schemaVersion", "mode"],
-        "type": "object"
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "schemaVersion": {
-            "const": 1
-          },
-          "catalogVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "raw"
-          },
-          "pairDefinitions": {
-            "const": [
+        "catalogVersion": {
+          "const": 1
+        },
+        "mode": {
+          "const": "raw"
+        },
+        "pairDefinitions": {
+          "const": [
+            {
+              "id": "meal-awakenings",
+              "predictor": "lastMeal",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "caffeine-awakenings",
+              "predictor": "lastCaffeine",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "no-caffeine-awakenings",
+              "predictor": "caffeineFree",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
+            },
+            {
+              "id": "screen-energy",
+              "predictor": "screenFreeMinutes",
+              "outcome": "morningEnergy",
+              "method": "pearson",
+              "definition": "paired-reported-numeric-values"
+            }
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "oneOf": [
               {
-                "id": "meal-awakenings",
-                "predictor": "lastMeal",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "record"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawRecord"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "caffeine-awakenings",
-                "predictor": "lastCaffeine",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "habit"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawHabit"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "no-caffeine-awakenings",
-                "predictor": "caffeineFree",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "night"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawNight"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "screen-energy",
-                "predictor": "screenFreeMinutes",
-                "outcome": "morningEnergy",
-                "method": "pearson",
-                "definition": "paired-reported-numeric-values"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "report"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawReport"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "selection"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawSelection"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "correlation"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawCorrelation"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "record-selection"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawRecordSelection"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "tombstone"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawTombstone"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "revision"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/rawRevision"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               }
             ]
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawRecord"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "habit"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawHabit"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "night"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawNight"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "report"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawReport"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "correlation"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawCorrelation"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record-selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawRecordSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "tombstone"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawTombstone"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "revision"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawRevision"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                }
-              ]
-            }
           }
-        },
-        "required": [
-          "schemaVersion",
-          "catalogVersion",
-          "mode",
-          "pairDefinitions",
-          "entries"
-        ],
-        "additionalProperties": false
+        }
       },
-      "else": false
+      "required": [
+        "schemaVersion",
+        "catalogVersion",
+        "mode",
+        "pairDefinitions",
+        "entries"
+      ],
+      "additionalProperties": false
     },
     {
-      "if": {
-        "properties": {
-          "schemaVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "anonymized"
-          }
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
         },
-        "required": ["schemaVersion", "mode"],
-        "type": "object"
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "schemaVersion": {
-            "const": 1
-          },
-          "catalogVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "anonymized"
-          },
-          "pairDefinitions": {
-            "const": [
+        "catalogVersion": {
+          "const": 1
+        },
+        "mode": {
+          "const": "anonymized"
+        },
+        "pairDefinitions": {
+          "const": [
+            {
+              "id": "meal-awakenings",
+              "predictor": "lastMeal",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "caffeine-awakenings",
+              "predictor": "lastCaffeine",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+            },
+            {
+              "id": "no-caffeine-awakenings",
+              "predictor": "caffeineFree",
+              "outcome": "awakeningCount",
+              "method": "point-biserial",
+              "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
+            },
+            {
+              "id": "screen-energy",
+              "predictor": "screenFreeMinutes",
+              "outcome": "morningEnergy",
+              "method": "pearson",
+              "definition": "paired-reported-numeric-values"
+            }
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "oneOf": [
               {
-                "id": "meal-awakenings",
-                "predictor": "lastMeal",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "record"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousRecord"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "caffeine-awakenings",
-                "predictor": "lastCaffeine",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "habit"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousHabit"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "no-caffeine-awakenings",
-                "predictor": "caffeineFree",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "night"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousNight"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               },
               {
-                "id": "screen-energy",
-                "predictor": "screenFreeMinutes",
-                "outcome": "morningEnergy",
-                "method": "pearson",
-                "definition": "paired-reported-numeric-values"
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "report"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousReport"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "selection"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousSelection"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "correlation"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousCorrelation"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "record-selection"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousRecordSelection"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "tombstone"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousTombstone"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "revision"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/anonymousRevision"
+                  }
+                },
+                "required": ["kind", "value"],
+                "additionalProperties": false
               }
             ]
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousRecord"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "habit"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousHabit"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "night"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousNight"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "report"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousReport"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "correlation"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousCorrelation"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record-selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousRecordSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "tombstone"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousTombstone"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "revision"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousRevision"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                }
-              ]
-            }
           }
-        },
-        "required": [
-          "schemaVersion",
-          "catalogVersion",
-          "mode",
-          "pairDefinitions",
-          "entries"
-        ],
-        "additionalProperties": false
+        }
       },
-      "else": false
-    },
-    {
-      "if": {
-        "properties": {
-          "schemaVersion": {
-            "const": 2
-          },
-          "mode": {
-            "const": "raw"
-          }
-        },
-        "required": ["schemaVersion", "mode"],
-        "type": "object"
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "schemaVersion": {
-            "const": 2
-          },
-          "catalogVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "raw"
-          },
-          "pairDefinitions": {
-            "const": [
-              {
-                "id": "meal-awakenings",
-                "predictor": "lastMeal",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
-              },
-              {
-                "id": "caffeine-awakenings",
-                "predictor": "lastCaffeine",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
-              },
-              {
-                "id": "no-caffeine-awakenings",
-                "predictor": "caffeineFree",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
-              },
-              {
-                "id": "screen-energy",
-                "predictor": "screenFreeMinutes",
-                "outcome": "morningEnergy",
-                "method": "pearson",
-                "definition": "paired-reported-numeric-values"
-              }
-            ]
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawRecord"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "habit"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawHabit"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "night"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/v2RawNight"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "report"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawReport"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "correlation"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawCorrelation"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record-selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawRecordSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "tombstone"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawTombstone"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "revision"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/v2RawRevision"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "settings"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/rawSettings"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                }
-              ]
-            }
-          }
-        },
-        "required": [
-          "schemaVersion",
-          "catalogVersion",
-          "mode",
-          "pairDefinitions",
-          "entries"
-        ],
-        "additionalProperties": false
-      },
-      "else": false
-    },
-    {
-      "if": {
-        "properties": {
-          "schemaVersion": {
-            "const": 2
-          },
-          "mode": {
-            "const": "anonymized"
-          }
-        },
-        "required": ["schemaVersion", "mode"],
-        "type": "object"
-      },
-      "then": {
-        "type": "object",
-        "properties": {
-          "schemaVersion": {
-            "const": 2
-          },
-          "catalogVersion": {
-            "const": 1
-          },
-          "mode": {
-            "const": "anonymized"
-          },
-          "pairDefinitions": {
-            "const": [
-              {
-                "id": "meal-awakenings",
-                "predictor": "lastMeal",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-meal-to-sleep-start-at-or-above-line"
-              },
-              {
-                "id": "caffeine-awakenings",
-                "predictor": "lastCaffeine",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "utc-hours-from-last-caffeine-to-sleep-start-at-or-above-line"
-              },
-              {
-                "id": "no-caffeine-awakenings",
-                "predictor": "caffeineFree",
-                "outcome": "awakeningCount",
-                "method": "point-biserial",
-                "definition": "nights-with-no-caffeine-versus-nights-with-caffeine"
-              },
-              {
-                "id": "screen-energy",
-                "predictor": "screenFreeMinutes",
-                "outcome": "morningEnergy",
-                "method": "pearson",
-                "definition": "paired-reported-numeric-values"
-              }
-            ]
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousRecord"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "habit"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousHabit"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "night"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/v2AnonymousNight"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "report"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousReport"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "correlation"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousCorrelation"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "record-selection"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousRecordSelection"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "tombstone"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousTombstone"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "revision"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/v2AnonymousRevision"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "const": "settings"
-                    },
-                    "value": {
-                      "$ref": "#/$defs/anonymousSettings"
-                    }
-                  },
-                  "required": ["kind", "value"],
-                  "additionalProperties": false
-                }
-              ]
-            }
-          }
-        },
-        "required": [
-          "schemaVersion",
-          "catalogVersion",
-          "mode",
-          "pairDefinitions",
-          "entries"
-        ],
-        "additionalProperties": false
-      },
-      "else": false
+      "required": [
+        "schemaVersion",
+        "catalogVersion",
+        "mode",
+        "pairDefinitions",
+        "entries"
+      ],
+      "additionalProperties": false
     }
   ],
   "$defs": {
@@ -8942,236 +8500,6 @@
         }
       },
       "required": ["entity", "ordinal", "supersedesOrdinal"],
-      "additionalProperties": false
-    },
-    "v2RawNight": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "keyAssignment": {
-          "$ref": "#/$defs/key"
-        },
-        "primarySessionId": {
-          "type": ["string", "null"]
-        },
-        "sessionIds": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "$ref": "#/$defs/scheduleTarget"
-            }
-          ]
-        }
-      },
-      "required": ["id", "keyAssignment", "primarySessionId", "sessionIds"],
-      "additionalProperties": false
-    },
-    "v2AnonymousNight": {
-      "type": "object",
-      "properties": {
-        "ordinal": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "keyAssignment": {
-          "$ref": "#/$defs/relativeKey"
-        },
-        "primarySessionOrdinal": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "integer",
-              "minimum": 0
-            }
-          ]
-        },
-        "sessionOrdinals": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "$ref": "#/$defs/scheduleTarget"
-            }
-          ]
-        }
-      },
-      "required": [
-        "ordinal",
-        "keyAssignment",
-        "primarySessionOrdinal",
-        "sessionOrdinals"
-      ],
-      "additionalProperties": false
-    },
-    "v2RawRevision": {
-      "type": "object",
-      "properties": {
-        "entity": {
-          "enum": ["habit", "night", "report", "settings"]
-        },
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "supersedesId": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": ["entity", "id", "supersedesId"],
-      "additionalProperties": false
-    },
-    "v2AnonymousRevision": {
-      "type": "object",
-      "properties": {
-        "entity": {
-          "enum": ["habit", "night", "report", "settings"]
-        },
-        "ordinal": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "supersedesOrdinal": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": ["entity", "ordinal", "supersedesOrdinal"],
-      "additionalProperties": false
-    },
-    "rawSettings": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "timestamp": {
-          "$ref": "#/$defs/timestamp"
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "$ref": "#/$defs/scheduleTarget"
-            }
-          ]
-        },
-        "dayBoundaryMinutes": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1439
-        },
-        "privacyNoteAcknowledged": {
-          "type": "boolean"
-        },
-        "strongerContrast": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "id",
-        "timestamp",
-        "target",
-        "dayBoundaryMinutes",
-        "privacyNoteAcknowledged",
-        "strongerContrast"
-      ],
-      "additionalProperties": false
-    },
-    "anonymousSettings": {
-      "type": "object",
-      "properties": {
-        "ordinal": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "timestamp": {
-          "$ref": "#/$defs/relativeTimestamp"
-        },
-        "target": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "$ref": "#/$defs/scheduleTarget"
-            }
-          ]
-        },
-        "dayBoundaryMinutes": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1439
-        },
-        "privacyNoteAcknowledged": {
-          "type": "boolean"
-        },
-        "strongerContrast": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "ordinal",
-        "timestamp",
-        "target",
-        "dayBoundaryMinutes",
-        "privacyNoteAcknowledged",
-        "strongerContrast"
-      ],
-      "additionalProperties": false
-    },
-    "scheduleTarget": {
-      "type": "object",
-      "properties": {
-        "bedtimeMinutes": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1439
-        },
-        "wakeMinutes": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1439
-        }
-      },
-      "required": ["bedtimeMinutes", "wakeMinutes"],
       "additionalProperties": false
     }
   }

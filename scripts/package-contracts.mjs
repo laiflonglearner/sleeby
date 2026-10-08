@@ -49,7 +49,10 @@ for (const name of ['domain', 'copy']) {
   );
   assert.deepEqual(manifest.exports, {
     ...(name === 'domain'
-      ? { './export-schema': './schema/export.schema.json' }
+      ? {
+          './export-schema': './schema/export.schema.json',
+          './export-schema-v1': './schema/export-v1.schema.json',
+        }
       : {}),
     '.': { types: './dist/index.d.ts', default: './dist/index.js' },
   });
@@ -137,7 +140,9 @@ assert.equal(domain.assignNightKey(time).key,'2026-10-03');
 assert.equal(domain.durationMinutes('2026-03-08T00:00:00-05:00','2026-03-08T08:00:00-04:00'),420);
 assert.equal(domain.HEALTH_RECORD_TYPES.length,41);
 const schema = await import('@sleeby/domain/export-schema', {with:{type:'json'}});
-assert.equal(schema.default.$id,'urn:sleeby:export:v1');
+assert.equal(schema.default.$id,'urn:sleeby:export');
+const schemaV1 = await import('@sleeby/domain/export-schema-v1', {with:{type:'json'}});
+assert.equal(schemaV1.default.$id,'urn:sleeby:export:v1');
 assert.equal(domain.pearsonCorrelation([1,2,3],[3,2,1]).status,'computed');
 assert.ok(copy.resolveCorrelationCopy({pair:'screen-energy',windowDays:14,startNightKey:'2026-10-01',endNightKey:'2026-10-14',sampleSize:0,status:'insufficient-data'}).description.includes('Not enough'));
 assert.ok(copy.resolveTrendCopy('sleepMinutes','higher').includes('higher'));

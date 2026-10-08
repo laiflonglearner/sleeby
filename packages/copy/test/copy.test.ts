@@ -14,6 +14,14 @@ const metadata = {
   sampleSize: 7,
 } as const;
 describe('reviewed template resolution', () => {
+  it('keeps the accepted manual-entry words together', () => {
+    expect(COPY_TEMPLATES.dayStartTitle).toBe('When should your day start?');
+    expect(COPY_TEMPLATES.saveFailed).toBe(
+      'Your changes could not be saved. They are still here. Try again.',
+    );
+    expect(COPY_TEMPLATES.mainSleepMissing).toBe('Main sleep not chosen yet');
+    expect(COPY_TEMPLATES.caffeineFree).toBe('I had no caffeine');
+  });
   it('covers insufficient and unavailable states', () => {
     expect(
       resolveCorrelationCopy({ ...metadata, status: 'insufficient-data' }),

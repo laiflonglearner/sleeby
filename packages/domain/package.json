@@ -25,7 +25,8 @@
       },
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    }
+    },
+    "./export-schema-v1": "./schema/export-v1.schema.json"
   },
   "types": "./src/index.ts",
   "publishConfig": {
@@ -37,7 +38,8 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
-      }
+      },
+      "./export-schema-v1": "./schema/export-v1.schema.json"
     }
   },
   "scripts": {

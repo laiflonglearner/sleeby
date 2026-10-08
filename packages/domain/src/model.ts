@@ -1,5 +1,10 @@
 import type { Interval } from './intervals.js';
-import type { KeyAssignment, Timestamp, TimeReference } from './time.js';
+import type {
+  KeyAssignment,
+  ScheduleTarget,
+  Timestamp,
+  TimeReference,
+} from './time.js';
 
 /** Platform offsets may be absent. Local keys require an explicit fallback reference. */
 export interface RecordedTimestamp {
@@ -312,8 +317,19 @@ export interface SleepSession {
 export interface Night {
   readonly id: string;
   readonly keyAssignment: KeyAssignment;
-  readonly primarySessionId: string;
+  readonly primarySessionId: string | null;
   readonly sessionIds: readonly string[];
+  readonly target?: ScheduleTarget | null;
+}
+
+/** Explicit preferences saved as immutable versions. Past entries keep their own choices. */
+export interface TrackingSettings {
+  readonly id: string;
+  readonly timestamp: Timestamp;
+  readonly target: ScheduleTarget | null;
+  readonly dayBoundaryMinutes: number;
+  readonly privacyNoteAcknowledged: boolean;
+  readonly strongerContrast: boolean;
 }
 
 /** Pre-sleep fields join to night D through their stored day assignment. */

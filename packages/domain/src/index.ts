@@ -1,3 +1,10 @@
+/** Local wall-clock entry without automatic correction. */
+export { localTimeCandidates } from './manual-time.js';
+/** Possible instants for a manual time entry. */
+export type { LocalTimeCandidates } from './manual-time.js';
+/** Saved tracking preferences. */
+export type { TrackingSettings } from './model.js';
+
 /** Public catalog operations and constants. */
 export {
   HEALTH_CATALOG_VERSION,

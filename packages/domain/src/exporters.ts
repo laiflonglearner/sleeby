@@ -12,6 +12,7 @@ import type {
   RawRecord,
   SourceTombstone,
   SubjectiveReport,
+  TrackingSettings,
 } from './model.js';
 import type { SleepSelection } from './selection.js';
 import {
@@ -23,13 +24,14 @@ import {
 } from './time.js';
 
 /** Version of the JSON envelope and its reversible long-form CSV representation. */
-export const EXPORT_SCHEMA_VERSION = 1 as const;
+export const EXPORT_SCHEMA_VERSION = 2 as const;
 
 /** Immutable caller-owned entries; selections preserve suppressed history explicitly. */
 export type ExportEntry =
   | Readonly<{ kind: 'record'; value: RawRecord }>
   | Readonly<{ kind: 'habit'; value: HabitEntry }>
   | Readonly<{ kind: 'night'; value: Night }>
+  | Readonly<{ kind: 'settings'; value: TrackingSettings }>
   | Readonly<{ kind: 'report'; value: SubjectiveReport }>
   | Readonly<{ kind: 'selection'; value: SleepSelection }>
   | Readonly<{ kind: 'record-selection'; value: RecordSelection }>
@@ -39,7 +41,7 @@ export type ExportEntry =
 
 /** Immutable user-entry lineage accompanies all snapshots, preserving revision authority. */
 export interface RevisionLink {
-  readonly entity: 'habit' | 'night' | 'report';
+  readonly entity: 'habit' | 'night' | 'report' | 'settings';
   readonly id: string;
   readonly supersedesId: string | null;
 }
@@ -556,7 +558,12 @@ function anonymize(
     }
     case 'revision': {
       const revision = entry.value;
-      const entity = knownCode(revision.entity, ['habit', 'night', 'report']);
+      const entity = knownCode(revision.entity, [
+        'habit',
+        'night',
+        'report',
+        'settings',
+      ]);
       return {
         entity,
         ordinal: ordinal(c, entity, revision.id),
@@ -625,10 +632,40 @@ function anonymize(
       return {
         ordinal: ordinal(c, 'night', night.id, true),
         keyAssignment: relativeKey(c, night.keyAssignment),
-        primarySessionOrdinal: ordinal(c, 'session', night.primarySessionId),
+        primarySessionOrdinal:
+          night.primarySessionId === null
+            ? null
+            : ordinal(c, 'session', night.primarySessionId),
+        ...(night.target === undefined
+          ? {}
+          : {
+              target:
+                night.target === null
+                  ? null
+                  : numericFields(night.target, [
+                      'bedtimeMinutes',
+                      'wakeMinutes',
+                    ]),
+            }),
         sessionOrdinals: night.sessionIds.map((id) =>
           ordinal(c, 'session', id),
         ),
+      };
+    }
+    case 'settings': {
+      const settings = entry.value;
+      return {
+        ordinal: ordinal(c, 'settings', settings.id, true),
+        timestamp: relativeTimestamp(c, settings.timestamp),
+        target:
+          settings.target === null
+            ? null
+            : numericFields(settings.target, ['bedtimeMinutes', 'wakeMinutes']),
+        ...numericFields(settings, [
+          'dayBoundaryMinutes',
+          'privacyNoteAcknowledged',
+          'strongerContrast',
+        ]),
       };
     }
     case 'selection': {
@@ -830,6 +867,7 @@ function validateEntryKind(entry: ExportEntry): void {
     'correlation',
     'tombstone',
     'revision',
+    'settings',
   ]);
 }
 
@@ -841,6 +879,7 @@ function trackLineageReferences(c: Context, entry: ExportEntry): void {
     case 'habit':
     case 'night':
     case 'report':
+    case 'settings':
       ordinal(c, entry.kind, entry.value.id, true);
       break;
     case 'revision': {
@@ -848,6 +887,7 @@ function trackLineageReferences(c: Context, entry: ExportEntry): void {
         'habit',
         'night',
         'report',
+        'settings',
       ]);
       ordinal(c, entity, entry.value.id);
       if (entry.value.supersedesId !== null)
@@ -871,7 +911,8 @@ function trackCsvReferences(c: Context, entry: ExportEntry): void {
         ordinal(c, 'session', entry.value.supersededBy);
       break;
     case 'night':
-      ordinal(c, 'session', entry.value.primarySessionId);
+      if (entry.value.primarySessionId !== null)
+        ordinal(c, 'session', entry.value.primarySessionId);
       for (const id of entry.value.sessionIds) ordinal(c, 'session', id);
       break;
     case 'record-selection':
@@ -953,7 +994,7 @@ export async function* exportCsv(
   yield 'schema_version,mode,kind,payload_json\r\n';
   yield csvRow(options.mode, 'manifest', {
     catalogVersion: HEALTH_CATALOG_VERSION,
-    format: 'sleeby-long-form-v1',
+    format: 'sleeby-long-form-v2',
     pairDefinitions: CORRELATION_PAIRS,
   });
   for await (const entry of entries) {

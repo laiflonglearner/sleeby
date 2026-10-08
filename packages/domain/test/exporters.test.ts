@@ -225,6 +225,162 @@ function expectSchema(value: unknown): void {
   if (!validate(value)) throw new Error(JSON.stringify(validate.errors));
 }
 
+const previousSchema: object = JSON.parse(
+  readFileSync(
+    new URL('../schema/export-v1.schema.json', import.meta.url),
+    'utf8',
+  ),
+) as object;
+const previous = new Ajv2020({ strict: true }).compile(previousSchema);
+
+describe('manual settings and export compatibility', () => {
+  it('keeps absent and explicit main choices and target snapshots in both formats', async () => {
+    const sleep = record(
+      'sleepSession',
+      payloads.sleepSession,
+      'manual-choice',
+    );
+    const before = {
+      id: `${PRIVATE}-night-before`,
+      keyAssignment,
+      primarySessionId: null,
+      sessionIds: [sleep.id],
+      target: { bedtimeMinutes: 1380, wakeMinutes: 420 },
+    };
+    const after = {
+      ...before,
+      id: `${PRIVATE}-night-after`,
+      primarySessionId: sleep.id,
+    };
+    const entries: ExportEntry[] = [
+      { kind: 'record', value: sleep },
+      {
+        kind: 'selection',
+        value: {
+          session: {
+            id: sleep.id,
+            origin: sleep.origin,
+            start: sleep.start,
+            end: sleep.end,
+            records: [sleep],
+            stages: [],
+          },
+          status: 'primary',
+          reason: 'user-selection',
+          supersededBy: null,
+        },
+      },
+      { kind: 'night', value: before },
+      { kind: 'night', value: after },
+      {
+        kind: 'revision',
+        value: { entity: 'night', id: before.id, supersedesId: null },
+      },
+      {
+        kind: 'revision',
+        value: { entity: 'night', id: after.id, supersedesId: before.id },
+      },
+    ];
+    for (const mode of ['raw', 'anonymized'] as const) {
+      const output = await envelope(entries, mode);
+      expectSchema(output);
+      const nights = output.entries
+        .filter((entry) => entry.kind === 'night')
+        .map((entry) => entry.value);
+      expect(nights.map((night) => night['target'])).toEqual([
+        before.target,
+        before.target,
+      ]);
+      expect(
+        nights[0]?.[
+          mode === 'raw' ? 'primarySessionId' : 'primarySessionOrdinal'
+        ],
+      ).toBeNull();
+      expect(
+        nights[1]?.[
+          mode === 'raw' ? 'primarySessionId' : 'primarySessionOrdinal'
+        ],
+      ).not.toBeNull();
+      const csv = await collect(
+        exportCsv(entries, mode === 'raw' ? { mode } : anonymous),
+      );
+      expect(
+        parsedRows(csv)
+          .filter((row) => row.kind === 'night')
+          .map((row) => row.value),
+      ).toEqual(nights);
+      if (mode === 'anonymized') {
+        expect(csv).not.toContain(PRIVATE);
+        expect(JSON.stringify(output)).not.toContain(PRIVATE);
+      }
+    }
+  });
+  it('keeps v1 valid and confines new choices to v2', async () => {
+    const old = { ...(await envelope([], 'raw')), schemaVersion: 1 };
+    expect(previous(old)).toBe(true);
+    expectSchema(old);
+    const entries: ExportEntry[] = [
+      {
+        kind: 'night',
+        value: {
+          id: 'unpicked',
+          keyAssignment,
+          primarySessionId: null,
+          sessionIds: [],
+          target: null,
+        },
+      },
+    ];
+    const next = await envelope(entries, 'raw');
+    expect(next.schemaVersion).toBe(2);
+    expectSchema(next);
+    expect(previous({ ...next, schemaVersion: 1 })).toBe(false);
+    expect(validate({ ...next, schemaVersion: 1 })).toBe(false);
+  });
+  it('keeps settings ancestry and omits anonymous identifiers in both formats', async () => {
+    const first = {
+      id: PRIVATE,
+      timestamp,
+      target: { bedtimeMinutes: 1380, wakeMinutes: 420 },
+      dayBoundaryMinutes: 360,
+      privacyNoteAcknowledged: true,
+      strongerContrast: false,
+    };
+    const second = {
+      ...first,
+      id: `${PRIVATE}-next`,
+      target: null,
+      strongerContrast: true,
+    };
+    const entries: ExportEntry[] = [
+      { kind: 'settings', value: first },
+      { kind: 'settings', value: second },
+      {
+        kind: 'revision',
+        value: { entity: 'settings', id: first.id, supersedesId: null },
+      },
+      {
+        kind: 'revision',
+        value: { entity: 'settings', id: second.id, supersedesId: first.id },
+      },
+    ];
+    const raw = await envelope(entries, 'raw');
+    expectSchema(raw);
+    expect(raw.entries[0]!.value).toEqual(first);
+    const anonymousOutput = await envelope(entries, 'anonymized');
+    expectSchema(anonymousOutput);
+    expect(JSON.stringify(anonymousOutput)).not.toContain(PRIVATE);
+    expect(anonymousOutput.entries[0]!.value['dayBoundaryMinutes']).toBe(360);
+    expect(anonymousOutput.entries[3]!.value['supersedesOrdinal']).toBe(
+      anonymousOutput.entries[0]!.value['ordinal'],
+    );
+    const csv = await collect(exportCsv(entries, anonymous));
+    expect(csv).not.toContain(PRIVATE);
+    expect(csv).toContain('settings');
+    expect(csv).toContain('sleeby-long-form-v2');
+  });
+});
+
 function parseCsv(value: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -264,7 +420,7 @@ function parsedRows(
   ]);
   return rows.map((row) => {
     expect(row).toHaveLength(4);
-    expect(row[0]).toBe('1');
+    expect(row[0]).toBe('2');
     expect(row[3]?.startsWith('{')).toBe(true);
     return {
       kind: row[2]!,

@@ -2,6 +2,47 @@ import type { CorrelationResult } from '@sleeby/domain';
 
 /** Neutral templates for data summaries and mobile storage startup. */
 export const COPY_TEMPLATES = {
+  today: 'Today',
+  date: 'Date',
+  dayStart: 'Day start',
+  lastMeal: 'Last meal',
+  hour: 'Hour',
+  minute: 'Minute',
+  now: 'Now',
+  save: 'Save',
+  edit: 'Edit',
+  retry: 'Try again',
+  openDay: 'Open day',
+  firstOccurrence: 'First',
+  secondOccurrence: 'Second',
+  dayStartTitle: 'When should your day start?',
+  dayStartHelp: 'Entries before this time count toward the day before.',
+  dayStartConfirm: 'Use this time',
+  firstOpen:
+    'Your entries stay on this phone. Removing Sleeby removes its saved data.',
+  continue: 'Continue',
+  saved: 'Saved',
+  saveFailed:
+    'Your changes could not be saved. They are still here. Try again.',
+  readFailed:
+    'Your changes were saved, but could not be shown. Try opening this day again.',
+  changedEntry:
+    'This entry changed while you were editing. Open the saved entry before trying again.',
+  leaveDraft: 'Leave without saving your changes?',
+  keepEditing: 'Keep editing',
+  leave: 'Leave without saving',
+  mainSleepQuestion: 'Which sleep was your main sleep?',
+  mainSleepMissing: 'Main sleep not chosen yet',
+  useMainSleep: 'Use this as my main sleep',
+  repeatedTime: 'This time happened twice. Choose which one you mean.',
+  nonexistentTime:
+    'This time did not happen on that date. Choose another time.',
+  preservedDay: 'This entry will stay on the day shown.',
+  tracked: 'Tracked',
+  rest: 'Rest day',
+  unmonitored: 'Not monitored',
+  pastEdits: 'Past edits',
+  caffeineFree: 'I had no caffeine',
   storageOpening: 'Opening your saved data...',
   storageUnavailable:
     "Your saved data can't be opened. Close Sleeby and try again.",

@@ -37,6 +37,7 @@
     "instantMilliseconds",
     "instantNanoseconds",
     "localClockMinutes",
+    "localTimeCandidates",
     "normalizeTimestamp",
     "normalizeUtcInstant",
     "outcomeFromReport",

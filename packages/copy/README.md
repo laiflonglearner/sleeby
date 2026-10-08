@@ -2,7 +2,9 @@
 
 `COPY_TEMPLATES.storageOpening` and `COPY_TEMPLATES.storageUnavailable` provide the text for mobile database startup. Technical errors and keys never appear in these messages.
 
-Prewritten neutral English templates for Sleeby data summaries. Shared templates passed owner review in Phase 0; mobile startup text awaits owner review. This package has not been published to npm.
+Manual-entry templates cover the explicit day-start question, saved and failed states, draft exit, main-sleep choice, clock changes and past edits. The owner accepted these as starting text on 2026-10-08; the in-app experience still awaits owner review.
+
+Prewritten neutral English templates for Sleeby data summaries. Shared templates passed owner review in Phase 0; mobile startup text was accepted with P1-02 on 2026-10-08. This package has not been published to npm.
 
 ```ts
 import { resolveCorrelationCopy } from '@sleeby/copy';

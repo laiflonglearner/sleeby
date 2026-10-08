@@ -2,7 +2,7 @@
 
 Effective date: 2026-10-04.
 
-Phase 0 contains open source libraries, database schemas, and tests. It does not contain a mobile app, request health permissions, collect health data, operate a server, or send data to an analytics service. Synthetic fixtures used by the test suite do not contain users' health histories.
+Sleeby contains open source libraries, database schemas, tests, and an Android development app with a placeholder screen and local database startup. The app does not request health permissions, operate a server, or send app data to an analytics service. Synthetic fixtures used by the test suite do not contain users' health histories.
 
 Sleeby's intended tracking model is local storage under your control. Future mobile apps must request access only to categories you choose and only after views and exports for those data types exist. Native permissions, encrypted storage, backup exclusion, and the exact runtime privacy behavior will be verified and this policy reviewed before that release. No encryption-at-rest claim is made for an unshipped application or browser storage.
 

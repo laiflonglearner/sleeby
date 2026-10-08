@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Sleeby",
+    "slug": "sleeby",
+    "scheme": "sleeby",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "org.sleeby.app",
+      "allowBackup": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-sqlite", { "useSQLCipher": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }],
+      "expo-dev-client",
+      "./plugins/with-private-storage"
+    ]
+  }
+}

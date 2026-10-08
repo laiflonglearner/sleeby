@@ -1,7 +1,10 @@
 import type { CorrelationResult } from '@sleeby/domain';
 
-/** First neutral template set, pending the Phase 0 owner review. */
+/** Neutral templates for data summaries and mobile storage startup. */
 export const COPY_TEMPLATES = {
+  storageOpening: 'Opening your saved data...',
+  storageUnavailable:
+    "Your saved data can't be opened. Close Sleeby and try again.",
   insufficient:
     'Not enough days with both measurements yet for this comparison.',
   unavailable:

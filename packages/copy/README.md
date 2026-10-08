@@ -1,6 +1,8 @@
 # @sleeby/copy
 
-Prewritten neutral English templates for Sleeby data summaries. Phase 0 templates require owner review before app development; this package has not been published to npm.
+`COPY_TEMPLATES.storageOpening` and `COPY_TEMPLATES.storageUnavailable` provide the text for mobile database startup. Technical errors and keys never appear in these messages.
+
+Prewritten neutral English templates for Sleeby data summaries. Shared templates passed owner review in Phase 0; mobile startup text awaits owner review. This package has not been published to npm.
 
 ```ts
 import { resolveCorrelationCopy } from '@sleeby/copy';

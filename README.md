@@ -2,7 +2,7 @@
 
 Sleeby is an open source habit and sleep tracker without sleep scores, recovery grades, streak pressure, or medical claims. It keeps raw records and describes observed patterns. You decide what those patterns mean.
 
-Phase 0 builds the shared packages and tooling. There is no app or UI yet. The types, schemas, predictor definitions, and copy templates require owner review before mobile development begins. Nothing is published to npm.
+Phase 0 shared packages have passed owner review. The Android development app has database startup and a placeholder screen; manual habit and sleep screens are the next phase. Nothing is published to npm.
 
 ## Workspace
 
@@ -13,11 +13,15 @@ Phase 0 builds the shared packages and tooling. There is no app or UI yet. The t
 | `@sleeby/data`   | SQLite schema, migrations, repositories, and the Dexie storage contract                                 | Private workspace package             |
 | `@sleeby/config` | Shared strict TypeScript, ESLint, and Prettier configuration                                            | Private workspace package             |
 
-Workspace globs reserve `apps/*`. No app directories exist in Phase 0. Platform adapters belong in future apps. The domain has no runtime dependencies; copy imports its types only. CI checks imports, re-exports, dynamic imports, relative-path escapes, and manifest dependencies.
+Workspace globs include `apps/*`. The Android adapter lives in `apps/mobile`; see its [development instructions](apps/mobile/README.md). The domain has no runtime dependencies; copy imports its types only. CI checks imports, re-exports, dynamic imports, relative-path escapes, and manifest dependencies.
 
 ## Development
 
 Use Node 24.21.0 from `.nvmrc` and Corepack to select pnpm 12.9.1 from `packageManager`. Install Corepack separately if your Node installation does not include it. Run `corepack pnpm install --frozen-lockfile`, then `corepack pnpm check`. Package consumers resolve workspace source directly. `pnpm build` emits plain ESM JavaScript, declarations, declaration maps, and source maps for release contract tests.
+
+The workspace uses pnpm's hoisted installation layout to keep Android CMake paths short on Windows. The isolated layout nests Worklets and Reanimated under long peer-dependency directory names, which can exceed native build path limits. After changing layouts, run `corepack pnpm install --frozen-lockfile` and remove the generated directories `apps/mobile/android/build`, `apps/mobile/android/.cxx`, `apps/mobile/android/app/build`, and `apps/mobile/android/app/.cxx` if present before rebuilding. These caches contain the old package paths. See [Expo's monorepo documentation](https://docs.expo.dev/guides/monorepos/#package-managers-with-isolated-dependencies).
+
+A previous isolated install can leave obsolete launchers in each workspace's `node_modules/.bin` directory. Remove launchers whose target files no longer exist so commands use the root launchers. Keep launchers for packages that remain installed locally, such as the mobile app's ESLint version.
 
 The toolchain was verified against the official registries on 2026-10-04. TypeScript 6.0.3 is the newest stable release supported by current `typescript-eslint` 8.71.0, whose declared range excludes TypeScript 7. Microsoft TSDoc parses export documentation directly. Data alone skips checking third-party declaration files because current Drizzle declares optional non-SQLite backends with upstream type errors; project source remains strict.
 

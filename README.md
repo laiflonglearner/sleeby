@@ -2,7 +2,7 @@
 
 Sleeby is an open source habit and sleep tracker without sleep scores, recovery grades, streak pressure, or medical claims. It keeps raw records and describes observed patterns. You decide what those patterns mean.
 
-Phase 0 shared packages have passed owner review. The Android development app has database startup and a placeholder screen; manual habit and sleep screens are the next phase. Nothing is published to npm.
+Phase 0 shared packages have passed owner review. The Android development source now has encrypted database startup, an explicit day-start question and persistent daily last-meal entries with edits. Sleep screens and the remaining manual fields are still in progress. This source has not passed phone acceptance. Nothing is published to npm.
 
 ## Workspace
 

@@ -1,6 +1,10 @@
 # Sleeby Android development app
 
-P1-02 opens the device database before showing the Sleeby placeholder. Manual habit and sleep screens belong to P1-03.
+P1-02 opens the device database before showing any screen. P1-03 source now asks for a day-start time before the first health save, then opens Today with a selected date, last-meal time and append-only edits. Sleep screens and the remaining fields are still in progress; phone acceptance is open.
+
+The 04:00 day start is a suggestion until confirmed. A chosen boundary survives reopening; earlier entries retain their saved boundary. A failed write keeps the draft, and retry uses the same operation ID. After a successful write followed by a failed read, retry reads the saved value without appending again. Time entry keeps exact minutes, and repeated local times ask for an occurrence. Drafts exist only in memory; leaving asks before discarding them.
+
+Migration 0002 adds immutable preferences and predecessor indexes. Its automated checks use disposable databases. Applying it to an existing owner's app database still needs separate permission before launching that build.
 
 ## Start locally
 
@@ -23,7 +27,7 @@ The plugin also installs `NoBackupAgent`, which writes no full-backup app data a
 Use a development build with Metro running and the phone connected through ADB. Set `SLEEBY_METRO_PORT` when Metro uses a port other than 8081. These checks do not read the app key or existing health entries.
 
 1. Run `corepack pnpm --filter @sleeby/mobile check:storage`. It checks the active SQLCipher connection, shared migration count, WITHOUT ROWID tables, and immutable triggers. It inserts one made-up habit inside a transaction and always rolls that transaction back. A separate `p1-02-check.db` stores a made-up test value using a test-only key; the wrong-key attempt targets that separate file.
-2. Fully stop and reopen Sleeby, then wait for its placeholder.
+2. Fully stop and reopen Sleeby, then wait for its day-start question or Today screen.
 3. Run `corepack pnpm --filter @sleeby/mobile check:storage --verify`. It reads the previously saved test value without creating it.
 4. Separately inspect the encrypted file header and attempt a schema read with ordinary SQLite, using only the separate test file.
 5. Check the installed backup flags and XML rules, then perform the phone's backup check and inspect its result. A configured exclusion alone does not demonstrate what the phone backed up.

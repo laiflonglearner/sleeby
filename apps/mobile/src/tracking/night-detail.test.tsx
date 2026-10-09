@@ -95,3 +95,33 @@ it('shows saved current and prior values and fetches the next bounded ancestry p
     params: { key: keyAssignment.key },
   });
 });
+
+it('shows the main sleep choice without duplicate sibling key warnings', async () => {
+  const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await render(
+      <NightDetail
+        repository={
+          {
+            readNightHistoryPage: jest.fn().mockReturnValue({
+              revisions: [{ value: current, supersedesId: null }],
+              nextCursor: null,
+            }),
+            readSleepByIds: jest.fn((ids: readonly string[]) => ids.map(sleep)),
+          } as unknown as SleebyRepository
+        }
+        nightKey={keyAssignment.key}
+        askMain
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', { name: new RegExp(copy.useMainSleep) }),
+    ).toBeTruthy();
+    expect(
+      error.mock.calls.flat().join(' '),
+    ).not.toMatch(/same key|duplicate key/i);
+  } finally {
+    error.mockRestore();
+  }
+});

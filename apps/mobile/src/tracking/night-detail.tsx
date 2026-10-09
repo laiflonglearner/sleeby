@@ -151,7 +151,7 @@ export function NightDetail({
           </Pressable>
           {asking ? (
             <MainSleepChoice
-              key={current.revision.value.id}
+              key={`main-sleep-choice:${current.revision.value.id}`}
               repository={repository}
               night={current.revision.value}
               sleeps={current.sleeps}

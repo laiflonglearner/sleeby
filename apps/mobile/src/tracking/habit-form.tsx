@@ -63,7 +63,8 @@ function ChoiceGroup<T extends string | boolean | undefined>({
               onPress={() => onChange(choice.value)}
             >
               <Text style={{ color: theme.text, textAlign: 'center' }}>
-                {selected ? '✓  ' : ''}{choice.label}
+                {selected ? '✓  ' : ''}
+                {choice.label}
               </Text>
             </Pressable>
           );
@@ -206,8 +207,7 @@ export function HabitForm({
           </Text>
           {initial.caffeineFree !== undefined && (
             <Text style={{ color }}>
-              Did you have any caffeine?{' '}
-              {initial.caffeineFree ? 'No' : 'Yes'}
+              Did you have any caffeine? {initial.caffeineFree ? 'No' : 'Yes'}
             </Text>
           )}
           {initial.movementCompleted !== undefined && (

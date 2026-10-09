@@ -118,9 +118,9 @@ it('shows the main sleep choice without duplicate sibling key warnings', async (
     expect(
       screen.getByRole('button', { name: new RegExp(copy.useMainSleep) }),
     ).toBeTruthy();
-    expect(
-      error.mock.calls.flat().join(' '),
-    ).not.toMatch(/same key|duplicate key/i);
+    expect(error.mock.calls.flat().join(' ')).not.toMatch(
+      /same key|duplicate key/i,
+    );
   } finally {
     error.mockRestore();
   }

@@ -73,13 +73,19 @@ Publication is currently disabled by .changeset/release-policy.json. Do not chan
 
 Inspect Git status, staged paths, and the relevant diff before editing or delivering work. Treat pre-existing changes as protected work.
 
-Do not stage, commit, push, create a pull request, or deploy without specific authorization. The recommended commit message does not authorize a commit.
+Every agent must commit its reviewed, task-owned work in coherent scopes before reporting completion or handing work to checkpoint or dispatch. Include new files. Do not leave task-owned edits staged, modified, or untracked for a later worker to sort out. If a task is not finished, commit a valid intermediate state before handoff; if the state cannot stand alone, keep working in the same task instead of dispatching another worker.
 
-When authorized, include only reviewed task-owned paths. Never use blanket staging, bypass hooks, delete .git/index.lock, or reset another session's work.
+Continue on the existing branch when the work belongs to its active topic. Start a `codex/<topic>` branch before editing a separate substantial topic, commit its reviewed scopes, then push that topic branch. This standing instruction authorizes topic-branch pushes. Never push `main`.
 
-Sleeby uses an open source workflow. Commit locally on main as work proceeds, with no branch needed for local commits. Never push main to the remote, and never push automatically after a commit. When the user asks to publish, move the commits to a topic branch, clean up the history, push that branch, and open a pull request. Work reaches the remote main only by merging a reviewed pull request. Do not import Lifelong Habit's main-only workflow or auto-push assumptions into Sleeby.
+Open a pull request when a change is substantial enough for a useful review, such as a cross-package behavior change, public API or schema change, migration, user-visible feature, or security and data handling work. Do not open a pull request for tiny copy, typo, or one-file documentation changes. Keep those small changes on the active branch and commit them without a pull request. A separate topic branch can collect small commits until it has a useful review boundary.
+
+Stage exact reviewed paths only. Never use blanket staging, bypass hooks, delete .git/index.lock, or reset another session's work. Do not rewrite published commits or force-push. Work reaches remote `main` through the repository's chosen integration path; do not assume a pull request is needed for every commit.
 
 Delegate only when the user or applicable instructions request it. Assign explicit file ownership and preserve other workers' changes.
+
+## Unavailable model fallbacks
+
+Keep Claude models as first choices. Only when the selected Claude model is unavailable on the current host, use these owner-approved alternatives: Haiku low to Luna 6 low (`gpt-6-luna`), Sonnet 5.5 medium to Sol 6.1 medium (`gpt-6.1-sol`), and Opus medium to Sol 6.1 high (`gpt-6.1-sol`). Opus fallback high is a specific exception to the medium effort ceiling. Preserve the original task tier, owner gates, scope, and permissions; changing models grants no permission to start work, run checks, or commit. Never treat a task failure as model unavailability. If neither model is available, return the prompt and the missing model. Existing Codex roles keep their defaults; these alternatives apply only to unavailable Claude models.
 
 ## Documentation and handoff
 

@@ -111,19 +111,19 @@ it('preserves absent, zero and false as separate saved choices with remaining fi
     />,
   );
   await fireEvent.changeText(
-    screen.getByLabelText('Morning sunlight minutes'),
+    screen.getByLabelText('Outdoor daylight before midday (minutes)'),
     '0',
   );
   await fireEvent.changeText(
-    screen.getByLabelText('Afternoon sunlight minutes'),
+    screen.getByLabelText('Outdoor daylight after midday (minutes)'),
     '12',
   );
   await fireEvent.changeText(screen.getByLabelText('Movement minutes'), '0');
   await fireEvent.press(
-    screen.getByRole('radio', { name: 'Movement completed: No' }),
+    screen.getByRole('radio', { name: 'Movement completed: Not completed' }),
   );
   await fireEvent.press(
-    screen.getByRole('radio', { name: `${copy.caffeineFree}: No` }),
+    screen.getByRole('radio', { name: 'Did you have any caffeine?: Yes' }),
   );
   await fireEvent.press(screen.getByRole('button', { name: copy.save }));
   const value = saveManualHabit.mock.calls[0]?.[0] as HabitEntry;
@@ -152,31 +152,33 @@ it('blocks conflicting caffeine choices and invalid durations, then saves a rest
   );
   await fireEvent.press(screen.getByRole('button', { name: copy.edit }));
   await fireEvent(
-    screen.getByRole('switch', { name: 'Last caffeine' }),
+    screen.getByRole('switch', { name: 'Add last caffeine time' }),
     'valueChange',
     true,
   );
   await fireEvent.press(
-    screen.getByRole('radio', { name: `${copy.caffeineFree}: Yes` }),
+    screen.getByRole('radio', { name: 'Did you have any caffeine?: No' }),
   );
   expect(screen.getByRole('button', { name: copy.save })).toBeDisabled();
   await fireEvent(
-    screen.getByRole('switch', { name: 'Last caffeine' }),
+    screen.getByRole('switch', { name: 'Add last caffeine time' }),
     'valueChange',
     false,
   );
   for (const invalid of ['-1', '1.5', 'Infinity']) {
     await fireEvent.changeText(
-      screen.getByLabelText('Morning sunlight minutes'),
+      screen.getByLabelText('Outdoor daylight before midday (minutes)'),
       invalid,
     );
     expect(screen.getByRole('button', { name: copy.save })).toBeDisabled();
   }
   await fireEvent.changeText(
-    screen.getByLabelText('Morning sunlight minutes'),
+    screen.getByLabelText('Outdoor daylight before midday (minutes)'),
     '',
   );
-  await fireEvent.press(screen.getByRole('radio', { name: copy.rest }));
+  await fireEvent.press(
+    screen.getByRole('radio', { name: 'Day status: Rest day' }),
+  );
   await fireEvent.press(screen.getByRole('button', { name: copy.save }));
   expect(saveManualHabit).toHaveBeenCalledWith(
     expect.objectContaining({

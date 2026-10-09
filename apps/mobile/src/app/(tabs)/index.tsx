@@ -93,47 +93,61 @@ export default function Today() {
         <Onboarding repository={repository} onConfirmed={load} />
       ) : (
         <>
-          <Text
-            accessibilityRole="header"
-            style={{ color, fontSize: 30, fontWeight: '600' }}
-          >
-            {copy.today}
-          </Text>
-          <Text style={{ color }}>{copy.date}</Text>
-          <TextInput
-            accessibilityLabel={copy.date}
-            accessibilityHint="YYYY-MM-DD"
-            value={typedDate}
-            onChangeText={setTypedDate}
-            autoCapitalize="none"
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={theme.text}
-            maxLength={10}
-            style={{
-              color,
-              minHeight: 48,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-              fontSize: 18,
-            }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={!validDate(typedDate)}
-            onPress={openDay}
-            style={{
-              minHeight: 48,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color }}>{copy.openDay}</Text>
-          </Pressable>
-          <Text style={{ color, fontSize: 22 }}>{day}</Text>
+          <View style={{ gap: 8 }}>
+            <Text
+              accessibilityRole="header"
+              style={{ color, fontSize: 18, fontWeight: '600' }}
+            >
+              Viewing day
+            </Text>
+            <Text style={{ color, fontSize: 22 }}>{day}</Text>
+            <Text style={{ color }}>Enter a date to open another day</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8,
+                alignItems: 'center',
+              }}
+            >
+              <TextInput
+                accessibilityLabel="Date to open"
+                accessibilityHint="YYYY-MM-DD"
+                value={typedDate}
+                onChangeText={setTypedDate}
+                autoCapitalize="none"
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={theme.text}
+                maxLength={10}
+                style={{
+                  flexGrow: 1,
+                  flexBasis: 180,
+                  color,
+                  minHeight: 48,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 12,
+                  fontSize: 18,
+                }}
+              />
+              <Pressable
+                accessibilityRole="button"
+                disabled={!validDate(typedDate)}
+                onPress={openDay}
+                style={{
+                  minHeight: 48,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 12,
+                  backgroundColor: theme.fill,
+                }}
+              >
+                <Text style={{ color }}>{copy.openDay}</Text>
+              </Pressable>
+            </View>
+          </View>
           <HabitForm
             key={`${day}:${revision}`}
             repository={repository}

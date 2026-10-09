@@ -193,17 +193,17 @@ it('keeps confirmed settings and complete habit edits through a SQLite restart',
       '1200',
     );
     for (const [label, value] of [
-      ['Morning sunlight minutes', '15'],
-      ['Afternoon sunlight minutes', '10'],
+      ['Outdoor daylight before midday (minutes)', '15'],
+      ['Outdoor daylight after midday (minutes)', '10'],
       ['Movement minutes', '30'],
       ['Screen-free minutes', '45'],
     ])
       await fireEvent.changeText(screen.getByLabelText(label!), value!);
     await fireEvent.press(
-      screen.getByRole('radio', { name: 'Movement completed: Yes' }),
+      screen.getByRole('radio', { name: 'Movement completed: Completed' }),
     );
     await fireEvent.press(
-      screen.getByRole('radio', { name: `${copy.caffeineFree}: Yes` }),
+      screen.getByRole('radio', { name: 'Did you have any caffeine?: Yes' }),
     );
     await fireEvent.press(screen.getByRole('button', { name: copy.save }));
     await view.unmount();

@@ -20,6 +20,59 @@ import {
 import { useTrackingTheme } from './theme';
 import { TimeCandidates, TimeEntry } from './time-entry';
 
+function ChoiceGroup<T extends string | boolean | undefined>({
+  label,
+  value,
+  choices,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  choices: { value: T; label: string }[];
+  disabled: boolean;
+  onChange: (value: T) => void;
+}) {
+  const theme = useTrackingTheme();
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={{ color: theme.text, fontWeight: '600' }}>{label}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {choices.map((choice) => {
+          const selected = value === choice.value;
+          return (
+            <Pressable
+              key={String(choice.value)}
+              accessibilityRole="radio"
+              accessibilityLabel={`${label}: ${choice.label}`}
+              accessibilityState={{ checked: selected, disabled }}
+              disabled={disabled}
+              style={{
+                flexGrow: 1,
+                flexBasis: 96,
+                minHeight: 48,
+                paddingHorizontal: 8,
+                paddingVertical: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: selected ? 2 : 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: selected ? theme.fill : theme.background,
+              }}
+              onPress={() => onChange(choice.value)}
+            >
+              <Text style={{ color: theme.text, textAlign: 'center' }}>
+                {selected ? '✓  ' : ''}{choice.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 /** The daily form keeps untouched fields and writes a new immutable snapshot. */
 export function HabitForm({
   repository,
@@ -71,8 +124,8 @@ export function HabitForm({
     screenFreeMinutes: initial?.screenFreeMinutes?.toString() ?? '',
   }));
   const fields = {
-    morningSunlightMinutes: 'Morning sunlight minutes',
-    afternoonSunlightMinutes: 'Afternoon sunlight minutes',
+    morningSunlightMinutes: 'Outdoor daylight before midday (minutes)',
+    afternoonSunlightMinutes: 'Outdoor daylight after midday (minutes)',
     movementMinutes: 'Movement minutes',
     screenFreeMinutes: 'Screen-free minutes',
   } as const;
@@ -153,12 +206,14 @@ export function HabitForm({
           </Text>
           {initial.caffeineFree !== undefined && (
             <Text style={{ color }}>
-              {copy.caffeineFree}: {initial.caffeineFree ? 'Yes' : 'No'}
+              Did you have any caffeine?{' '}
+              {initial.caffeineFree ? 'No' : 'Yes'}
             </Text>
           )}
           {initial.movementCompleted !== undefined && (
             <Text style={{ color }}>
-              Movement completed: {initial.movementCompleted ? 'Yes' : 'No'}
+              Movement:{' '}
+              {initial.movementCompleted ? 'Completed' : 'Not completed'}
             </Text>
           )}
           {(Object.keys(fields) as (keyof typeof fields)[]).map((field) =>
@@ -235,127 +290,143 @@ export function HabitForm({
             </Text>
           )}
           <View style={{ gap: 12 }}>
-            {(['tracked', 'rest', 'unmonitored'] as const).map((value) => (
-              <Pressable
-                key={value}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: monitoring === value, disabled }}
-                disabled={disabled}
-                style={{
-                  minHeight: 48,
-                  padding: 12,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}
-                onPress={() => {
-                  change();
-                  setMonitoring(value);
-                }}
-              >
-                <Text style={{ color }}>{copy[value]}</Text>
-              </Pressable>
-            ))}
-            <Text style={{ color }}>Last caffeine</Text>
-            <Switch
-              accessibilityLabel="Last caffeine"
-              value={hasCaffeine}
+            <ChoiceGroup
+              label="Day status"
+              value={monitoring}
               disabled={disabled}
-              onValueChange={(value) => {
+              choices={(['tracked', 'rest', 'unmonitored'] as const).map(
+                (value) => ({ value, label: copy[value] }),
+              )}
+              onChange={(value) => {
                 change();
-                setHasCaffeine(value);
+                setMonitoring(value);
               }}
             />
-            {hasCaffeine && (
-              <>
-                <TimeEntry
-                  label="Last caffeine"
-                  value={caffeineMinutes}
-                  disabled={disabled}
-                  onChange={(value) => {
-                    change();
-                    setCaffeineMinutes(value);
-                    setCaffeineChosen(null);
-                  }}
-                />
-                <Text style={{ color }}>
-                  {copy.date}: {caffeineCandidates.date} {zone}
-                </Text>
-                <TimeCandidates
-                  {...caffeineCandidates}
-                  chosen={caffeineChosen?.utc ?? null}
-                  onChoose={(value) => {
-                    change();
-                    setCaffeineChosen(value);
-                  }}
-                />
-              </>
-            )}
-            <Text style={{ color }}>{copy.caffeineFree}</Text>
-            {([undefined, true, false] as const).map((value) => (
-              <Pressable
-                key={String(value)}
-                accessibilityRole="radio"
-                accessibilityLabel={`${copy.caffeineFree}: ${value === undefined ? 'Unanswered' : value ? 'Yes' : 'No'}`}
-                accessibilityState={{
-                  checked: caffeineFree === value,
-                  disabled,
-                }}
+            <Text style={{ color }}>
+              This applies to the whole day, not just the meal.{' '}
+              {monitoring === 'tracked'
+                ? 'Tracked days can be included in comparisons when the needed measurements are present.'
+                : monitoring === 'rest'
+                  ? 'Mark this as a rest day. It is left out of comparisons.'
+                  : 'Mark this day as not tracked. It is left out of comparisons.'}
+            </Text>
+            <View style={{ gap: 8 }}>
+              <Text style={{ color, fontWeight: '600' }}>Caffeine</Text>
+              <ChoiceGroup
+                label="Did you have any caffeine?"
+                value={caffeineFree}
                 disabled={disabled}
-                style={{ minHeight: 48, padding: 12 }}
-                onPress={() => {
+                choices={[
+                  { value: undefined, label: 'Not answered' },
+                  { value: false, label: 'Yes' },
+                  { value: true, label: 'No' },
+                ]}
+                onChange={(value) => {
                   change();
                   setCaffeineFree(value);
                 }}
-              >
-                <Text style={{ color }}>
-                  {value === undefined ? 'Unanswered' : value ? 'Yes' : 'No'}
-                </Text>
-              </Pressable>
-            ))}
-            <Text style={{ color }}>Movement completed</Text>
-            {([undefined, true, false] as const).map((value) => (
-              <Pressable
-                key={String(value)}
-                accessibilityRole="radio"
-                accessibilityLabel={`Movement completed: ${value === undefined ? 'Unanswered' : value ? 'Yes' : 'No'}`}
-                accessibilityState={{ checked: movement === value, disabled }}
-                disabled={disabled}
-                style={{ minHeight: 48, padding: 12 }}
-                onPress={() => {
-                  change();
-                  setMovement(value);
+              />
+              <Text style={{ color }}>
+                Adding the last caffeine time is optional.
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: 12,
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
                 }}
               >
-                <Text style={{ color }}>
-                  {value === undefined ? 'Unanswered' : value ? 'Yes' : 'No'}
-                </Text>
-              </Pressable>
-            ))}
-            {(Object.keys(fields) as (keyof typeof fields)[]).map((field) => (
-              <View key={field} style={{ gap: 8 }}>
-                <Text style={{ color }}>{fields[field]}</Text>
-                <TextInput
-                  accessibilityLabel={fields[field]}
-                  keyboardType="number-pad"
-                  editable={!disabled}
-                  value={durations[field]}
-                  onChangeText={(value) => {
+                <Text style={{ color }}>Add last caffeine time</Text>
+                <Switch
+                  accessibilityLabel="Add last caffeine time"
+                  value={hasCaffeine}
+                  disabled={disabled}
+                  onValueChange={(value) => {
                     change();
-                    setDurations((previous) => ({
-                      ...previous,
-                      [field]: value,
-                    }));
-                  }}
-                  style={{
-                    minHeight: 48,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    color,
+                    setHasCaffeine(value);
                   }}
                 />
               </View>
-            ))}
+              {hasCaffeine && (
+                <>
+                  <TimeEntry
+                    label="Last caffeine"
+                    value={caffeineMinutes}
+                    disabled={disabled}
+                    onChange={(value) => {
+                      change();
+                      setCaffeineMinutes(value);
+                      setCaffeineChosen(null);
+                    }}
+                  />
+                  <Text style={{ color }}>
+                    {copy.date}: {caffeineCandidates.date} {zone}
+                  </Text>
+                  <TimeCandidates
+                    {...caffeineCandidates}
+                    chosen={caffeineChosen?.utc ?? null}
+                    onChoose={(value) => {
+                      change();
+                      setCaffeineChosen(value);
+                    }}
+                  />
+                </>
+              )}
+              {hasCaffeine && caffeineFree === true && (
+                <Text accessibilityRole="alert" style={{ color }}>
+                  “No” conflicts with a last caffeine time. Change one of these
+                  entries to save.
+                </Text>
+              )}
+            </View>
+            <ChoiceGroup
+              label="Movement completed"
+              value={movement}
+              disabled={disabled}
+              choices={[
+                { value: undefined, label: 'Not answered' },
+                { value: true, label: 'Completed' },
+                { value: false, label: 'Not completed' },
+              ]}
+              onChange={(value) => {
+                change();
+                setMovement(value);
+              }}
+            />
+            <View style={{ gap: 8 }}>
+              <Text style={{ color, fontWeight: '600' }}>
+                Optional daily notes
+              </Text>
+              <Text style={{ color }}>
+                Leave any field blank if you do not track it.
+              </Text>
+              {(Object.keys(fields) as (keyof typeof fields)[]).map((field) => (
+                <View key={field} style={{ gap: 8 }}>
+                  <Text style={{ color }}>{fields[field]}</Text>
+                  <TextInput
+                    accessibilityLabel={fields[field]}
+                    keyboardType="number-pad"
+                    editable={!disabled}
+                    value={durations[field]}
+                    onChangeText={(value) => {
+                      change();
+                      setDurations((previous) => ({
+                        ...previous,
+                        [field]: value,
+                      }));
+                    }}
+                    style={{
+                      minHeight: 48,
+                      padding: 12,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      color,
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
           </View>
           <Pressable
             accessibilityRole="button"

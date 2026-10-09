@@ -10,7 +10,21 @@ import { useRepository } from './provider';
 jest.mock('expo-router', () => ({ Stack: jest.fn(() => null) }));
 jest.mock('./index', () => ({ openRepository: jest.fn() }));
 
-const repository = {} as SleebyRepository;
+const repository = {
+  readCurrentTrackingSettings: () => ({
+    value: {
+      id: 'settings',
+      timestamp: {
+        utc: '2026-10-09T00:00:00Z',
+        reference: { kind: 'iana' as const, zone: 'Asia/Jakarta' },
+      },
+      target: null,
+      dayBoundaryMinutes: 240,
+      privacyNoteAcknowledged: true,
+      strongerContrast: false,
+    },
+  }),
+} as unknown as SleebyRepository;
 
 function Probe() {
   const active = useRepository();

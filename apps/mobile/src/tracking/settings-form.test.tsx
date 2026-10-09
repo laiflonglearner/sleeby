@@ -7,6 +7,32 @@ jest.mock('expo-router', () => ({
   useNavigation: () => ({ addListener: jest.fn(() => jest.fn()) }),
 }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-settings' }));
+jest.mock('./time-entry', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Pressable, Text } =
+    jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    TimeEntry: ({
+      label,
+      value,
+      onChange,
+    }: {
+      label: string;
+      value: number;
+      onChange: (value: number) => void;
+    }) =>
+      React.createElement(
+        Pressable,
+        {
+          accessibilityRole: 'adjustable',
+          accessibilityLabel: `${label} Minute`,
+          accessibilityValue: { now: value % 60 },
+          onAccessibilityAction: () => onChange(value + 1),
+        },
+        React.createElement(Text, null, String(value)),
+      ),
+  };
+});
 const initial: TrackingSettings = {
   id: 'settings',
   timestamp: {

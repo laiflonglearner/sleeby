@@ -207,6 +207,26 @@ describe('manual transaction boundaries', () => {
     failNight = false;
     repo.saveManualSleep(sleep('s1'), night('n1', ['s1']), null);
     expect(repo.readRawPage(10).records).toHaveLength(1);
+    failNight = true;
+    expect(() =>
+      repo.saveManualSleep(sleep('s2'), night('n2', ['s2']), 'n1', 's1'),
+    ).toThrow('synthetic-write-failure');
+    expect(repo.readSleepByIds(['s1'])).toEqual([sleep('s1')]);
+    expect(repo.readRawPage(10).records).toEqual([sleep('s1')]);
+    expect(repo.readCurrentNight(keyAssignment.key)?.value).toEqual(
+      night('n1', ['s1']),
+    );
+    expect(repo.readNightHistoryPage(keyAssignment.key, 10).revisions).toEqual([
+      { value: night('n1', ['s1']), supersedesId: null },
+    ]);
+    failNight = false;
+    repo.saveManualSleep(sleep('s2'), night('n2', ['s2']), 'n1', 's1');
+    repo.saveManualSleep(sleep('s2'), night('n2', ['s2']), 'n1', 's1');
+    expect(repo.readRawPage(10).records).toHaveLength(2);
+    expect(repo.readNightHistoryPage(keyAssignment.key, 10).revisions).toEqual([
+      { value: night('n2', ['s2']), supersedesId: 'n1' },
+      { value: night('n1', ['s1']), supersedesId: null },
+    ]);
   });
   it('rejects multiple heads instead of picking a timestamp winner', () => {
     const repo = new SleebyRepository(database());

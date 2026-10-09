@@ -1,6 +1,8 @@
 # Sleeby Android development app
 
-P1-02 opens the device database before showing any screen. P1-03 source now asks for a day-start time before the first health save, then opens Today with a selected date, last-meal time and append-only edits. Sleep screens and the remaining fields are still in progress; phone acceptance is open.
+P1-02 opens the device database before showing any screen. P1-03 source asks for a day-start time and privacy-note acknowledgement, then opens Today, Nights and Settings. Today saves last meal, last caffeine or a caffeine-free choice, morning/afternoon sunlight minutes, movement and optional minutes, screen-free minutes, and tracked/rest/unmonitored days. Empty values stay distinct from zero and false. P1-03 phone and owner acceptance remain open.
+
+Sleep entry shows both calendar dates and elapsed UTC minutes. Night detail lets you choose main sleep and read past edits; closing the question keeps a prior choice or leaves it unanswered. Interval edits append versions and keep the original intervals. Nights reads bounded pages. Settings saves optional bedtime/wake targets, day start and stronger contrast. Settings changes affect future entries; saved days and Nights keep their original boundaries and target snapshots.
 
 The 04:00 day start is a suggestion until confirmed. A chosen boundary survives reopening; earlier entries retain their saved boundary. A failed write keeps the draft, and retry uses the same operation ID. After a successful write followed by a failed read, retry reads the saved value without appending again. Time entry keeps exact minutes, and repeated local times ask for an occurrence. Drafts exist only in memory; leaving asks before discarding them.
 

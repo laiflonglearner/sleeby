@@ -97,3 +97,94 @@ it('keeps the draft and earlier saved value on failure without displaying privat
   ).toHaveAccessibilityValue({ now: 38 });
   expect(screen.queryByText('private-entry')).toBeNull();
 });
+
+it('preserves absent, zero and false as separate saved choices with remaining fields', async () => {
+  const saveManualHabit = jest.fn();
+  await render(
+    <HabitForm
+      repository={{ saveManualHabit } as unknown as SleebyRepository}
+      settings={settings}
+      day="2026-10-08"
+      initial={null}
+      onSaved={jest.fn()}
+      onDirty={jest.fn()}
+    />,
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText('Morning sunlight minutes'),
+    '0',
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText('Afternoon sunlight minutes'),
+    '12',
+  );
+  await fireEvent.changeText(screen.getByLabelText('Movement minutes'), '0');
+  await fireEvent.press(
+    screen.getByRole('radio', { name: 'Movement completed: No' }),
+  );
+  await fireEvent.press(
+    screen.getByRole('radio', { name: `${copy.caffeineFree}: No` }),
+  );
+  await fireEvent.press(screen.getByRole('button', { name: copy.save }));
+  const value = saveManualHabit.mock.calls[0]?.[0] as HabitEntry;
+  expect(value).toMatchObject({
+    morningSunlightMinutes: 0,
+    afternoonSunlightMinutes: 12,
+    movementMinutes: 0,
+    movementCompleted: false,
+    caffeineFree: false,
+    monitoring: 'tracked',
+  });
+  expect(value).not.toHaveProperty('screenFreeMinutes');
+  expect(value).not.toHaveProperty('lastCaffeine');
+});
+it('blocks conflicting caffeine choices and invalid durations, then saves a rest day without erasing values', async () => {
+  const saveManualHabit = jest.fn();
+  await render(
+    <HabitForm
+      repository={{ saveManualHabit } as unknown as SleebyRepository}
+      settings={settings}
+      day="2026-10-08"
+      initial={initial}
+      onSaved={jest.fn()}
+      onDirty={jest.fn()}
+    />,
+  );
+  await fireEvent.press(screen.getByRole('button', { name: copy.edit }));
+  await fireEvent(
+    screen.getByRole('switch', { name: 'Last caffeine' }),
+    'valueChange',
+    true,
+  );
+  await fireEvent.press(
+    screen.getByRole('radio', { name: `${copy.caffeineFree}: Yes` }),
+  );
+  expect(screen.getByRole('button', { name: copy.save })).toBeDisabled();
+  await fireEvent(
+    screen.getByRole('switch', { name: 'Last caffeine' }),
+    'valueChange',
+    false,
+  );
+  for (const invalid of ['-1', '1.5', 'Infinity']) {
+    await fireEvent.changeText(
+      screen.getByLabelText('Morning sunlight minutes'),
+      invalid,
+    );
+    expect(screen.getByRole('button', { name: copy.save })).toBeDisabled();
+  }
+  await fireEvent.changeText(
+    screen.getByLabelText('Morning sunlight minutes'),
+    '',
+  );
+  await fireEvent.press(screen.getByRole('radio', { name: copy.rest }));
+  await fireEvent.press(screen.getByRole('button', { name: copy.save }));
+  expect(saveManualHabit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      monitoring: 'rest',
+      caffeineFree: true,
+      screenFreeMinutes: 45,
+      movementCompleted: false,
+    }),
+    'old',
+  );
+});

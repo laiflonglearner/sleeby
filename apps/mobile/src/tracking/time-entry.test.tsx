@@ -65,3 +65,26 @@ it('leaves a repeated local time unchosen until a specific occurrence is pressed
   await fireEvent.press(screen.getByRole('radio', { name: /Second:/ }));
   expect(choose).toHaveBeenCalledWith(candidates[1]);
 });
+
+it('keeps disabled wheels still and preserves an exact minute on large rows', async () => {
+  const onChange = jest.fn();
+  await render(
+    <TimeEntry
+      label="Target bedtime"
+      value={1439}
+      onChange={onChange}
+      disabled
+      showNow={false}
+    />,
+  );
+  const wheel = screen.getByRole('adjustable', {
+    name: 'Target bedtime Minute',
+  });
+  expect(wheel).toHaveAccessibilityValue({ now: 59 });
+  expect(Number(wheel.props.snapToInterval)).toBeGreaterThanOrEqual(48);
+  await fireEvent(wheel, 'accessibilityAction', {
+    nativeEvent: { actionName: 'increment' },
+  });
+  expect(onChange).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: 'Now' })).toBeNull();
+});

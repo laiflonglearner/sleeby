@@ -6,11 +6,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { clockText, currentTimestamp } from './state';
+import { useTrackingTheme } from './theme';
 
 function Wheel({
   label,
@@ -27,13 +27,13 @@ function Wheel({
 }) {
   const wheel = useRef<ScrollView>(null);
   const height = 48 * Math.max(1, useWindowDimensions().fontScale);
-  const dark = useColorScheme() === 'dark';
+  const theme = useTrackingTheme();
   useEffect(() => {
     wheel.current?.scrollTo({ y: value * height, animated: false });
   }, [value, height]);
   return (
     <View style={{ flex: 1 }}>
-      <Text style={{ color: dark ? '#f5f5ef' : '#22271f' }}>{label}</Text>
+      <Text style={{ color: theme.text }}>{label}</Text>
       <ScrollView
         ref={wheel}
         nestedScrollEnabled
@@ -99,18 +99,13 @@ function Wheel({
               height,
               justifyContent: 'center',
               alignItems: 'center',
-              backgroundColor:
-                number === value
-                  ? dark
-                    ? '#354336'
-                    : '#dbe5d4'
-                  : 'transparent',
+              backgroundColor: number === value ? theme.fill : 'transparent',
               borderRadius: 12,
             }}
           >
             <Text
               style={{
-                color: dark ? '#f5f5ef' : '#22271f',
+                color: theme.text,
                 fontSize: 22,
                 fontWeight: number === value ? '700' : '400',
               }}
@@ -138,12 +133,12 @@ export function TimeEntry({
   disabled?: boolean;
   showNow?: boolean;
 }) {
-  const dark = useColorScheme() === 'dark';
+  const theme = useTrackingTheme();
   return (
     <View style={styles.section}>
       <Text
         style={{
-          color: dark ? '#f5f5ef' : '#22271f',
+          color: theme.text,
           fontSize: 18,
           fontWeight: '600',
         }}
@@ -171,11 +166,9 @@ export function TimeEntry({
           disabled={disabled}
           accessibilityRole="button"
           onPress={() => onChange(localClockMinutes(currentTimestamp()))}
-          style={styles.button}
+          style={[styles.button, { borderColor: theme.border }]}
         >
-          <Text style={{ color: dark ? '#f5f5ef' : '#22271f' }}>
-            {copy.now}
-          </Text>
+          <Text style={{ color: theme.text }}>{copy.now}</Text>
         </Pressable>
       )}
     </View>
@@ -194,31 +187,26 @@ export function TimeCandidates({
   chosen: string | null;
   onChoose: (stamp: Timestamp) => void;
 }) {
-  const dark = useColorScheme() === 'dark';
+  const theme = useTrackingTheme();
   if (status === 'nonexistent')
     return (
-      <Text
-        accessibilityRole="alert"
-        style={{ color: dark ? '#f5f5ef' : '#22271f' }}
-      >
+      <Text accessibilityRole="alert" style={{ color: theme.text }}>
         {copy.nonexistentTime}
       </Text>
     );
   if (status !== 'repeated') return null;
   return (
     <View style={styles.section}>
-      <Text style={{ color: dark ? '#f5f5ef' : '#22271f' }}>
-        {copy.repeatedTime}
-      </Text>
+      <Text style={{ color: theme.text }}>{copy.repeatedTime}</Text>
       {candidates.map((stamp, index) => (
         <Pressable
           key={stamp.utc}
           accessibilityRole="radio"
           accessibilityState={{ checked: chosen === stamp.utc }}
           onPress={() => onChoose(stamp)}
-          style={styles.button}
+          style={[styles.button, { borderColor: theme.border }]}
         >
-          <Text style={{ color: dark ? '#f5f5ef' : '#22271f' }}>
+          <Text style={{ color: theme.text }}>
             {index === 0 ? copy.firstOccurrence : copy.secondOccurrence}:{' '}
             {stamp.utc}
           </Text>

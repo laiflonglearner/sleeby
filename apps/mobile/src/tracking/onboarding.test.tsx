@@ -2,7 +2,7 @@ import { COPY_TEMPLATES as copy } from '@sleeby/copy';
 import type { SleebyRepository } from '@sleeby/data';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Onboarding } from './onboarding';
-import Today from '../app/index';
+import Today from '../app/(tabs)/index';
 import type { HabitEntry, TrackingSettings } from '@sleeby/domain';
 
 const mockNavigation = {
@@ -16,6 +16,7 @@ jest.mock('expo-crypto', () => ({
 }));
 jest.mock('expo-router', () => ({
   useNavigation: () => mockNavigation,
+  useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void) =>
     jest
       .requireActual<typeof import('react')>('react')
@@ -90,6 +91,7 @@ it('keeps Today closed before confirmation and reads preferences and a meal afte
     habit = value;
   });
   mockRepository = {
+    readNightPage: () => ({ nights: [], nextCursor: null }),
     readCurrentTrackingSettings: () =>
       preferences ? { value: preferences, supersedesId: null } : null,
     readCurrentHabit: (key: string) =>

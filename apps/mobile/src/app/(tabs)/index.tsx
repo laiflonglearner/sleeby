@@ -1,22 +1,17 @@
 import { COPY_TEMPLATES as copy } from '@sleeby/copy';
 import type { HabitEntry, TrackingSettings } from '@sleeby/domain';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from 'react-native';
-import { useRepository } from '../db/provider';
-import { HabitForm } from '../tracking/habit-form';
-import { Onboarding } from '../tracking/onboarding';
-import { confirmDraftExit, currentDay, validDate } from '../tracking/state';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useRepository } from '../../db/provider';
+import { HabitForm } from '../../tracking/habit-form';
+import { Onboarding } from '../../tracking/onboarding';
+import { useTrackingTheme } from '../../tracking/theme';
+import { confirmDraftExit, currentDay, validDate } from '../../tracking/state';
 
 export default function Today() {
   const repository = useRepository();
+  const router = useRouter();
   const [settings, setSettings] = useState<TrackingSettings | null>(null);
   const [day, setDay] = useState('');
   const [typedDate, setTypedDate] = useState('');
@@ -25,8 +20,8 @@ export default function Today() {
   const [loaded, setLoaded] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [revision, setRevision] = useState(0);
-  const dark = useColorScheme() === 'dark';
-  const color = dark ? '#f5f5ef' : '#22271f';
+  const theme = useTrackingTheme();
+  const color = theme.text;
   const load = useCallback(() => {
     const saved = repository.readCurrentTrackingSettings()?.value ?? null;
     const key = day || (saved ? currentDay(saved.dayBoundaryMinutes) : '');
@@ -70,7 +65,7 @@ export default function Today() {
         flexGrow: 1,
         padding: 24,
         gap: 24,
-        backgroundColor: dark ? '#131a16' : '#f8f5ee',
+        backgroundColor: theme.background,
       }}
     >
       {failed ? (
@@ -112,14 +107,14 @@ export default function Today() {
             onChangeText={setTypedDate}
             autoCapitalize="none"
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={dark ? '#c5cec1' : '#4e5b48'}
+            placeholderTextColor={theme.text}
             maxLength={10}
             style={{
               color,
               minHeight: 48,
               padding: 12,
               borderWidth: 1,
-              borderColor: '#758271',
+              borderColor: theme.border,
               borderRadius: 12,
               fontSize: 18,
             }}
@@ -132,7 +127,7 @@ export default function Today() {
               minHeight: 48,
               padding: 12,
               borderWidth: 1,
-              borderColor: '#758271',
+              borderColor: theme.border,
               borderRadius: 12,
             }}
           >
@@ -148,6 +143,28 @@ export default function Today() {
             onSaved={load}
             onDirty={setDirty}
           />
+          <Pressable
+            accessibilityRole="button"
+            style={{ minHeight: 48, padding: 12 }}
+            onPress={() =>
+              confirmDraftExit(dirty, () =>
+                router.push({ pathname: '/sleep-entry', params: { key: day } }),
+              )
+            }
+          >
+            <Text style={{ color }}>Add sleep</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={{ minHeight: 48, padding: 12 }}
+            onPress={() =>
+              confirmDraftExit(dirty, () =>
+                router.push({ pathname: '/night/[key]', params: { key: day } }),
+              )
+            }
+          >
+            <Text style={{ color }}>Open night {day}</Text>
+          </Pressable>
         </>
       )}
     </ScrollView>

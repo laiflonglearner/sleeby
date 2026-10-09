@@ -10,6 +10,8 @@ import { COPY_TEMPLATES } from '@sleeby/copy';
 import { useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import type { NightPage, SleebyRepository } from '@sleeby/data';
+import { useTrackingTheme } from './theme';
 
 /** Format an exact local minute position. */
 export function clockText(minutes: number): string {
@@ -67,8 +69,13 @@ export function habitTime(
   };
 }
 
-/** Resolve both displayed calendar dates before calculating real elapsed time. */
-export function sleepTimes(date: string, start: number, end: number, zone: string) {
+/** Find both displayed calendar dates before calculating real elapsed time. */
+export function sleepTimes(
+  date: string,
+  start: number,
+  end: number,
+  zone: string,
+) {
   const endDate = end < start ? nextDate(date) : date;
   return {
     startDate: date,
@@ -164,8 +171,13 @@ export function confirmDraftExit(dirty: boolean, leave: () => void): void {
 }
 
 /** Navigation and the date picker use the same draft-exit question. */
-export function useDraftExit(dirty: boolean): void {
+export function useDraftExit(dirty: boolean): () => void {
   const navigation = useNavigation();
+  const { setDirty } = useTrackingTheme();
+  useEffect(() => {
+    setDirty(dirty);
+    return () => setDirty(false);
+  }, [dirty, setDirty]);
   const leaving = useRef(false);
   useEffect(
     () =>
@@ -179,9 +191,25 @@ export function useDraftExit(dirty: boolean): void {
       }),
     [dirty, navigation],
   );
+  return () => {
+    leaving.current = true;
+  };
 }
 
 /** Quick logging opens the day under the confirmed boundary. */
 export function currentDay(boundary: number): string {
   return assignDayKey(currentTimestamp(), boundary).key;
+}
+
+/** Read only the next bounded inventory page. A failed read leaves the prior page intact. */
+export function moreNights(
+  repository: SleebyRepository,
+  page: NightPage,
+): NightPage {
+  if (!page.nextCursor) return page;
+  const next = repository.readNightPage(30, page.nextCursor);
+  return {
+    nights: [...page.nights, ...next.nights],
+    nextCursor: next.nextCursor,
+  };
 }

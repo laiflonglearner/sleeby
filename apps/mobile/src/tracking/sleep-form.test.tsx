@@ -4,6 +4,45 @@ import type { Night, SleepRecord, TrackingSettings } from '@sleeby/domain';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { SleepForm } from './sleep-form';
 
+// The large native wheels are tested separately in time-entry.test.tsx.
+jest.mock('./time-entry', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Pressable, Text } =
+    jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    TimeEntry: ({
+      label,
+      value,
+      onChange,
+    }: {
+      label: string;
+      value: number;
+      onChange: (minutes: number) => void;
+    }) =>
+      React.createElement(
+        Pressable,
+        {
+          accessibilityRole: 'adjustable',
+          accessibilityLabel: `${label} Minute`,
+          accessibilityActions: [{ name: 'increment' }, { name: 'decrement' }],
+          onAccessibilityAction: (event: {
+            nativeEvent: { actionName: string };
+          }) => {
+            const minute = value % 60;
+            onChange(
+              Math.floor(value / 60) * 60 +
+                ((minute +
+                  (event.nativeEvent.actionName === 'increment' ? 1 : 59)) %
+                  60),
+            );
+          },
+        },
+        React.createElement(Text, null, String(value % 60)),
+      ),
+    TimeCandidates: () => null,
+  };
+});
+
 let mockBeforeRemove:
   | ((event: { preventDefault: () => void; data: { action: unknown } }) => void)
   | undefined;
